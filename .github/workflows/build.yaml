@@ -27,9 +27,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Clone PySCIPOpt
-        run: git clone https://github.com/scipopt/PySCIPOpt.git
-
       - uses: pypa/cibuildwheel@v2.21.1
         env:
           CIBW_ARCHS: ${{ matrix.arch }}
