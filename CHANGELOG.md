@@ -9,10 +9,17 @@
 - Added addMatrixConsIndicator(), and tests
 - Added SCIPvarMarkRelaxationOnly, SCIPvarIsRelaxationOnly, SCIPvarMarkDeletable, SCIPvarIsDeletable, and tests
 - Wrapped SCIPgetNLPBranchCands
+- Added getConsVals() to get coefficients of any linear type constraint
+- Generalized getLhs() and getRhs() to additionally support any linear type constraint
+- Added recipe for getting local constraints
+- Added enableDebugSol() and disableDebugSol() for controlling the debug solution mechanism if DEBUGSOL=true
+- Added getVarPseudocostScore() and getVarPseudocost()
 ### Fixed
 - Raised an error when an expression is used when a variable is required
+- Fixed some compile warnings
 ### Changed
-- MatrixExpr.sum() now supports axis arguments and can return either a scalar or MatrixExpr depending on the result dimensions
+- MatrixExpr.sum() now supports axis arguments and can return either a scalar or MatrixExpr, depending on the result dimensions.
+- AddMatrixCons() also accepts ExprCons.
 ### Removed
 
 ## 5.5.0 - 2025.05.06
