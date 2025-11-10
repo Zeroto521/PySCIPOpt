@@ -1814,12 +1814,14 @@ cdef class Variable(Expr):
         """
         return SCIPvarGetNBranchingsCurrentRun(self.scip_var, branchdir)
 
-class MatrixVariable(MatrixExpr):
 
-    def _var_func(self, func, dtype, *args, **kwargs):
-        res = np.empty(self.shape, dtype=dtype)
-        res.flat = [getattr(i, func)(*args, **kwargs) for i in self.flat]
-        return res
+def _inner_func(array, func, dtype, *args, **kwargs):
+    res = np.empty(shape, dtype=dtype)
+    res.flat = [getattr(i, func)(*args, **kwargs) for i in array.flat]
+    return res
+
+
+class MatrixVariable(MatrixExpr):
 
     def vtype(self):
         """
@@ -1831,7 +1833,7 @@ class MatrixVariable(MatrixExpr):
             A matrix containing "BINARY", "INTEGER", "CONTINUOUS", or "IMPLINT"
 
         """
-        return self._var_func("vtype", object)
+        return _inner_func(self, "vtype", object)
 
     def isInLP(self):
         """
@@ -1843,7 +1845,7 @@ class MatrixVariable(MatrixExpr):
             An array of bools
 
         """
-        return self._var_func("isInLP", bool)
+        return _inner_func(self, "isInLP", bool)
 
 
     def getIndex(self):
@@ -1855,7 +1857,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
             An array of integers. No two should be the same
         """
-        return self._var_func("getIndex", int)
+        return _inner_func(self, "getIndex", int)
 
     def getCol(self):
         """
@@ -1866,7 +1868,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
             An array of Column objects
         """
-        return self._var_func("getCol", object)
+        return _inner_func(self, "getCol", object)
 
     def getLbOriginal(self):
         """
@@ -1877,7 +1879,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        return self._var_func("getLbOriginal", float)
+        return _inner_func(self, "getLbOriginal", float)
 
     def getUbOriginal(self):
         """
@@ -1888,7 +1890,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        return self._var_func("getUbOriginal", float)
+        return _inner_func(self, "getUbOriginal", float)
 
     def getLbGlobal(self):
         """
@@ -1899,7 +1901,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        return self._var_func("getLbGlobal", float)
+        return _inner_func(self, "getLbGlobal", float)
 
     def getUbGlobal(self):
         """
@@ -1910,7 +1912,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        return self._var_func("getUbGlobal", float)
+        return _inner_func(self, "getUbGlobal", float)
 
     def getLbLocal(self):
         """
@@ -1921,7 +1923,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        return self._var_func("getLbLocal", float)
+        return _inner_func(self, "getLbLocal", float)
 
     def getUbLocal(self):
         """
@@ -1932,7 +1934,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        return self._var_func("getUbLocal", float)
+        return _inner_func(self, "getUbLocal", float)
 
     def getObj(self):
         """
@@ -1943,7 +1945,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        return self._var_func("getObj", float)
+        return _inner_func(self, "getObj", float)
 
     def getLPSol(self):
         """
@@ -1954,7 +1956,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        return self._var_func("getLPSol", float)
+        return _inner_func(self, "getLPSol", float)
 
     def getAvgSol(self):
         """
@@ -1965,7 +1967,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        return self._var_func("getAvgSol", float)
+        return _inner_func(self, "getAvgSol", float)
 
     def varMayRound(self, direction="down"):
         """
@@ -1982,7 +1984,7 @@ class MatrixVariable(MatrixExpr):
             An array of bools
 
         """
-        return self._var_func("varMayRound", bool)
+        return _inner_func(self, "varMayRound", bool)
 
 
 cdef class Constraint:
@@ -2218,6 +2220,7 @@ cdef class Constraint:
         return (self.__class__ == other.__class__
                 and self.scip_cons == (<Constraint>other).scip_cons)
 
+
 class MatrixConstraint(np.ndarray):
 
     def isInitial(self):
@@ -2229,10 +2232,7 @@ class MatrixConstraint(np.ndarray):
         np.ndarray
 
         """
-        initial = np.empty(self.shape, dtype=bool)
-        for idx in np.ndindex(self):
-            initial[idx] = self[idx].isInitial()
-        return initial
+        return _inner_func(self, "isInitial", bool)
 
     def isSeparated(self):
         """
@@ -2243,10 +2243,7 @@ class MatrixConstraint(np.ndarray):
         np.ndarray
 
         """
-        separated = np.empty(self.shape, dtype=bool)
-        for idx in np.ndindex(self):
-            separated[idx] = self[idx].isSeparated()
-        return separated
+        return _inner_func(self, "isSeparated", bool)
 
     def isEnforced(self):
         """
@@ -2257,10 +2254,7 @@ class MatrixConstraint(np.ndarray):
         np.ndarray
 
         """
-        enforced = np.empty(self.shape, dtype=bool)
-        for idx in np.ndindex(self):
-            enforced[idx] = self[idx].isEnforced()
-        return enforced
+        return _inner_func(self, "isEnforced", bool)
 
     def isChecked(self):
         """
@@ -2271,10 +2265,7 @@ class MatrixConstraint(np.ndarray):
         np.ndarray
 
         """
-        checked = np.empty(self.shape, dtype=bool)
-        for idx in np.ndindex(self):
-            checked[idx] = self[idx].isCheced()
-        return checked
+        return _inner_func(self, "isChecked", bool)
 
     def isPropagated(self):
         """
@@ -2285,10 +2276,7 @@ class MatrixConstraint(np.ndarray):
         np.ndarray
 
         """
-        propagated = np.empty(self.shape, dtype=bool)
-        for idx in np.ndindex(self):
-            propagated[idx] = self[idx].isPropagated()
-        return propagated
+        return _inner_func(self, "isPropagated", bool)
 
     def isLocal(self):
         """
@@ -2299,10 +2287,7 @@ class MatrixConstraint(np.ndarray):
         np.ndarray
 
         """
-        local = np.empty(self.shape, dtype=bool)
-        for idx in np.ndindex(self):
-            local[idx] = self[idx].isLocal()
-        return local
+        return _inner_func(self, "isLocal", bool)
 
     def isModifiable(self):
         """
@@ -2313,10 +2298,7 @@ class MatrixConstraint(np.ndarray):
         np.ndarray
 
         """
-        modifiable = np.empty(self.shape, dtype=bool)
-        for idx in np.ndindex(self):
-            modifiable[idx] = self[idx].isModifiable()
-        return modifiable
+        return _inner_func(self, "isModifiable", bool)
 
     def isDynamic(self):
         """
@@ -2327,10 +2309,7 @@ class MatrixConstraint(np.ndarray):
         np.ndarray
 
         """
-        dynamic = np.empty(self.shape, dtype=bool)
-        for idx in np.ndindex(self):
-            dynamic[idx] = self[idx].isDynamic()
-        return dynamic
+        return _inner_func(self, "isDynamic", bool)
 
     def isRemovable(self):
         """
@@ -2341,10 +2320,7 @@ class MatrixConstraint(np.ndarray):
         np.ndarray
 
         """
-        removable = np.empty(self.shape, dtype=bool)
-        for idx in np.ndindex(self):
-            removable[idx] = self[idx].isRemovable()
-        return removable
+        return _inner_func(self, "isRemovable", bool)
 
     def isStickingAtNode(self):
         """
@@ -2355,10 +2331,7 @@ class MatrixConstraint(np.ndarray):
         np.ndarray
 
         """
-        stickingatnode = np.empty(self.shape, dtype=bool)
-        for idx in np.ndindex(self):
-            stickingatnode[idx] = self[idx].isStickingAtNode()
-        return stickingatnode
+        return _inner_func(self, "isStickingAtNode", bool)
 
     def isActive(self):
         """
@@ -2369,10 +2342,7 @@ class MatrixConstraint(np.ndarray):
         np.ndarray
 
         """
-        active = np.empty(self.shape, dtype=bool)
-        for idx in np.ndindex(self):
-            active[idx] = self[idx].isActive()
-        return active
+        return _inner_func(self, "isActive", bool)
 
     def isLinear(self):
         """
@@ -2383,10 +2353,7 @@ class MatrixConstraint(np.ndarray):
         np.ndarray
 
         """
-        islinear = np.empty(self.shape, dtype=bool)
-        for idx in np.ndindex(self):
-            islinear[idx] = self[idx].isLinear()
-        return islinear
+        return _inner_func(self, "isLinear", bool)
 
     def isNonlinear(self):
         """
@@ -2397,10 +2364,7 @@ class MatrixConstraint(np.ndarray):
         np.ndarray
 
         """
-        isnonlinear = np.empty(self.shape, dtype=bool)
-        for idx in np.ndindex(self):
-            isnonlinear[idx] = self[idx].isNonlinear()
-        return isnonlinear
+        return _inner_func(self, "isNonlinear", bool)
 
     def getConshdlrName(self):
         """
@@ -2411,10 +2375,8 @@ class MatrixConstraint(np.ndarray):
         np.ndarray
 
         """
-        name = np.empty(self.shape, dtype=bool)
-        for idx in np.ndindex(self):
-            name[idx] = self[idx].getConshdlrName()
-        return name
+        return _inner_func(self, "getConshdlrName", bool)
+
 
 cdef void relayMessage(SCIP_MESSAGEHDLR *messagehdlr, FILE *file, const char *msg) noexcept:
     if file is stdout:
