@@ -1816,6 +1816,11 @@ cdef class Variable(Expr):
 
 class MatrixVariable(MatrixExpr):
 
+    def _var_func(self, func, dtype, *args, **kwargs):
+        res = np.empty(self.shape, dtype=dtype)
+        res.flat = [getattr(i, func)(*args, **kwargs) for i in self.flat]
+        return res
+
     def vtype(self):
         """
         Retrieve the matrix variables type (BINARY, INTEGER, IMPLINT or CONTINUOUS)
@@ -1826,10 +1831,7 @@ class MatrixVariable(MatrixExpr):
             A matrix containing "BINARY", "INTEGER", "CONTINUOUS", or "IMPLINT"
 
         """
-        vtypes = np.empty(self.shape, dtype=object)
-        for idx in np.ndindex(self.shape):
-            vtypes[idx] = self[idx].vtype()
-        return vtypes
+        return self._var_func("vtype", object)
 
     def isInLP(self):
         """
@@ -1841,10 +1843,7 @@ class MatrixVariable(MatrixExpr):
             An array of bools
 
         """
-        in_lp = np.empty(self.shape, dtype=bool)
-        for idx in np.ndindex(self.shape):
-            in_lp[idx] = self[idx].isInLP()
-        return in_lp
+        return self._var_func("isInLP", bool)
 
 
     def getIndex(self):
@@ -1856,10 +1855,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
             An array of integers. No two should be the same
         """
-        indices = np.empty(self.shape, dtype=int)
-        for idx in np.ndindex(self.shape):
-            indices[idx] = self[idx].getIndex()
-        return indices
+        return self._var_func("getIndex", int)
 
     def getCol(self):
         """
@@ -1870,11 +1866,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
             An array of Column objects
         """
-
-        columns = np.empty(self.shape, dtype=object)
-        for idx in np.ndindex(self.shape):
-            columns[idx] = self[idx].getCol()
-        return columns
+        return self._var_func("getCol", object)
 
     def getLbOriginal(self):
         """
@@ -1885,10 +1877,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        lbs = np.empty(self.shape, dtype=float)
-        for idx in np.ndindex(self.shape):
-            lbs[idx] = self[idx].getLbOriginal()
-        return lbs
+        return self._var_func("getLbOriginal", float)
 
     def getUbOriginal(self):
         """
@@ -1899,10 +1888,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        ubs = np.empty(self.shape, dtype=float)
-        for idx in np.ndindex(self.shape):
-            ubs[idx] = self[idx].getUbOriginal()
-        return ubs
+        return self._var_func("getUbOriginal", float)
 
     def getLbGlobal(self):
         """
@@ -1913,10 +1899,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        lbs = np.empty(self.shape, dtype=float)
-        for idx in np.ndindex(self.shape):
-            lbs[idx] = self[idx].getLbGlobal()
-        return lbs
+        return self._var_func("getLbGlobal", float)
 
     def getUbGlobal(self):
         """
@@ -1927,10 +1910,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        ubs = np.empty(self.shape, dtype=float)
-        for idx in np.ndindex(self.shape):
-            ubs[idx] = self[idx].getUbGlobal()
-        return ubs
+        return self._var_func("getUbGlobal", float)
 
     def getLbLocal(self):
         """
@@ -1941,10 +1921,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        lbs = np.empty(self.shape, dtype=float)
-        for idx in np.ndindex(self.shape):
-            lbs[idx] = self[idx].getLbLocal()
-        return lbs
+        return self._var_func("getLbLocal", float)
 
     def getUbLocal(self):
         """
@@ -1955,10 +1932,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        ubs = np.empty(self.shape, dtype=float)
-        for idx in np.ndindex(self.shape):
-            ubs[idx] = self[idx].getUbLocal()
-        return ubs
+        return self._var_func("getUbLocal", float)
 
     def getObj(self):
         """
@@ -1969,10 +1943,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        objs = np.empty(self.shape, dtype=float)
-        for idx in np.ndindex(self.shape):
-            objs[idx] = self[idx].getObj()
-        return objs
+        return self._var_func("getObj", float)
 
     def getLPSol(self):
         """
@@ -1983,10 +1954,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        lpsols = np.empty(self.shape, dtype=float)
-        for idx in np.ndindex(self.shape):
-            lpsols[idx] = self[idx].getLPSol()
-        return lpsols
+        return self._var_func("getLPSol", float)
 
     def getAvgSol(self):
         """
@@ -1997,10 +1965,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        avgsols = np.empty(self.shape, dtype=float)
-        for idx in np.ndindex(self.shape):
-            avgsols[idx] = self[idx].getAvgSol()
-        return avgsols
+        return self._var_func("getAvgSol", float)
 
     def varMayRound(self, direction="down"):
         """
@@ -2017,10 +1982,7 @@ class MatrixVariable(MatrixExpr):
             An array of bools
 
         """
-        mayround = np.empty(self.shape, dtype=bool)
-        for idx in np.ndindex(self.shape):
-            mayround[idx] = self[idx].varMayRound()
-        return mayround
+        return self._var_func("varMayRound", bool)
 
 
 cdef class Constraint:
