@@ -102,8 +102,6 @@ cdef class MatrixExpr(np.ndarray):
         res.flat = [i._evaluate(scip, sol) for i in self.flat]
         return res
 
-class MatrixGenExpr(MatrixExpr):
-    pass
 
 class MatrixExprCons(np.ndarray):
 
