@@ -43,7 +43,7 @@ def _matrixexpr_richcmp(self, other, op):
     return res.view(MatrixExprCons)
 
 
-class MatrixExpr(np.ndarray):
+cdef class MatrixExpr(np.ndarray):
     def sum(self, **kwargs):
         """
         Based on `numpy.ndarray.sum`, but returns a scalar if `axis=None`.
@@ -96,6 +96,11 @@ class MatrixExpr(np.ndarray):
 
     def __matmul__(self, other):
         return super().__matmul__(other).view(MatrixExpr)
+
+    def _evaluate(self, SCIP* scip, SCIP_SOL* sol):
+        res = np.zeros(self.shape, dtype=np.float64)
+        res.flat = [i._evaluate(scip, sol) for i in self.flat]
+        return res
 
 class MatrixGenExpr(MatrixExpr):
     pass
