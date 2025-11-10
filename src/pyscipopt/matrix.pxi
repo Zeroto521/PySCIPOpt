@@ -43,7 +43,7 @@ def _matrixexpr_richcmp(self, other, op):
     return res.view(MatrixExprCons)
 
 
-cdef class MatrixExpr(np.ndarray):
+cdef class MatrixBase(np.ndarray):
     def sum(self, **kwargs):
         """
         Based on `numpy.ndarray.sum`, but returns a scalar if `axis=None`.
@@ -53,7 +53,7 @@ cdef class MatrixExpr(np.ndarray):
         if kwargs.get("axis") is None:
             # Speed up `.sum()` #1070
             return quicksum(self.flat)
-        return super().sum(**kwargs)
+        return super().sum(**kwargs).view(MatrixExpr)
 
     def __le__(self, other: Union[float, int, "Expr", np.ndarray, "MatrixExpr"]) -> MatrixExprCons:
         return _matrixexpr_richcmp(self, other, 1)
@@ -101,6 +101,10 @@ cdef class MatrixExpr(np.ndarray):
         res = np.zeros(self.shape, dtype=np.float64)
         res.flat = [i._evaluate(scip, sol) for i in self.flat]
         return res
+
+
+class MatrixExpr(MatrixBase):
+    ...
 
 
 class MatrixExprCons(np.ndarray):

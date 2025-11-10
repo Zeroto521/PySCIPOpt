@@ -1821,7 +1821,7 @@ def _inner_func(array, func, dtype, *args, **kwargs):
     return res
 
 
-class MatrixVariable(MatrixExpr):
+class MatrixVariable(MatrixBase):
 
     def vtype(self):
         """
@@ -1846,7 +1846,6 @@ class MatrixVariable(MatrixExpr):
 
         """
         return _inner_func(self, "isInLP", bool)
-
 
     def getIndex(self):
         """
