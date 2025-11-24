@@ -58,8 +58,10 @@ class Term:
 CONST = Term()
 
 
-class Expr:
+cdef class Expr:
     """Base class for mathematical expressions."""
+
+    cdef public dict children
 
     def __init__(self, children: Optional[dict[Union[Variable, Term, Expr], float]] = None):
         children = children or {}
@@ -241,7 +243,7 @@ class Expr:
         return nodes + [(type(self), indices)]
 
 
-class SumExpr(Expr):
+cdef class SumExpr(Expr):
     """Expression like `expression1 + expression2 + constant`."""
 
     def __add__(self, other):
@@ -264,7 +266,7 @@ class SumExpr(Expr):
         return SumExpr({k: v for k, v in self.children.items() if v != 0})
 
 
-class PolynomialExpr(SumExpr):
+cdef class PolynomialExpr(SumExpr):
     """Expression like `2*x**3 + 4*x*y + constant`."""
 
     def __init__(self, children: Optional[dict[Term, float]] = None):
@@ -335,7 +337,7 @@ class PolynomialExpr(SumExpr):
         return nodes
 
 
-class ConstExpr(PolynomialExpr):
+cdef class ConstExpr(PolynomialExpr):
     """Expression representing for `constant`."""
 
     def __init__(self, constant: float = 0):
@@ -351,7 +353,7 @@ class ConstExpr(PolynomialExpr):
         return super().__pow__(other)
 
 
-class MonomialExpr(PolynomialExpr):
+cdef class MonomialExpr(PolynomialExpr):
     """Expression like `x**3`."""
 
     def __init__(self, children: dict[Term, float]):
@@ -365,7 +367,7 @@ class MonomialExpr(PolynomialExpr):
         return MonomialExpr({Term(var): coef})
 
 
-class FuncExpr(Expr):
+cdef class FuncExpr(Expr):
     def __init__(
         self,
         children: Optional[dict[Union[Variable, Term, Expr], float]] = None,
@@ -378,8 +380,10 @@ class FuncExpr(Expr):
         return float("inf")
 
 
-class ProdExpr(FuncExpr):
+cdef class ProdExpr(FuncExpr):
     """Expression like `coefficient * expression`."""
+
+    cdef public double coef
 
     def __init__(self, *children, coef: float = 1.0):
         super().__init__({i: 1.0 for i in children})
@@ -411,8 +415,10 @@ class ProdExpr(FuncExpr):
         return self
 
 
-class PowExpr(FuncExpr):
+cdef class PowExpr(FuncExpr):
     """Expression like `pow(expression, exponent)`."""
+
+    cdef public double expo
 
     def __init__(self, base: Union[Variable, Term, Expr], expo: float = 1.0):
         super().__init__({base: 1.0})
@@ -432,7 +438,7 @@ class PowExpr(FuncExpr):
         return self
 
 
-class UnaryExpr(FuncExpr):
+cdef class UnaryExpr(FuncExpr):
     """Expression like `f(expression)`."""
 
     def __init__(self, expr: Union[Number, Variable, Term, Expr]):
@@ -463,38 +469,42 @@ class UnaryExpr(FuncExpr):
         return nodes + [(type(self), start + len(nodes) - 1)]
 
 
-class AbsExpr(UnaryExpr):
+cdef class AbsExpr(UnaryExpr):
     """Expression like `abs(expression)`."""
     ...
 
 
-class ExpExpr(UnaryExpr):
+cdef class ExpExpr(UnaryExpr):
     """Expression like `exp(expression)`."""
     ...
 
 
-class LogExpr(UnaryExpr):
+cdef class LogExpr(UnaryExpr):
     """Expression like `log(expression)`."""
     ...
 
 
-class SqrtExpr(UnaryExpr):
+cdef class SqrtExpr(UnaryExpr):
     """Expression like `sqrt(expression)`."""
     ...
 
 
-class SinExpr(UnaryExpr):
+cdef class SinExpr(UnaryExpr):
     """Expression like `sin(expression)`."""
     ...
 
 
-class CosExpr(UnaryExpr):
+cdef class CosExpr(UnaryExpr):
     """Expression like `cos(expression)`."""
     ...
 
 
-class ExprCons:
+cdef class ExprCons:
     """Constraints with a polynomial expressions and lower/upper bounds."""
+
+    cdef public Expr expr
+    cdef public object _lhs
+    cdef public object _rhs
 
     def __init__(self, expr: Expr, lhs: Optional[float] = None, rhs: Optional[float] = None):
         if not isinstance(expr, Expr):
