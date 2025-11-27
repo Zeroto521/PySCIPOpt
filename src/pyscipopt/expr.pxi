@@ -1,6 +1,7 @@
 ##@file expr.pxi
 from collections.abc import Hashable
 from numbers import Number
+from pickle import dumps
 from typing import Optional, Type, Union
 
 include "matrix.pxi"
@@ -72,7 +73,7 @@ class Expr:
         }
 
     def __hash__(self) -> int:
-        return frozenset(self.children.items()).__hash__()
+        return dumps(self.children).__hash__()
 
     def __getitem__(self, key: Union[Variable, Term, Expr]) -> float:
         if not isinstance(key, (Term, Expr)):
@@ -408,7 +409,7 @@ class ProdExpr(FuncExpr):
         self.coef = coef
 
     def __hash__(self) -> int:
-        return (frozenset(self), self.coef).__hash__()
+        return dumps((self, self.coef)).__hash__()
 
     def __add__(self, other):
         other = Expr.from_const_or_var(other)
@@ -441,7 +442,7 @@ class PowExpr(FuncExpr):
         self.expo = expo
 
     def __hash__(self) -> int:
-        return (frozenset(self), self.expo).__hash__()
+        return dumps((self.children, self.expo)).__hash__()
 
     def __repr__(self) -> str:
         return f"PowExpr({tuple(self)}, {self.expo})"
@@ -463,7 +464,7 @@ class UnaryExpr(FuncExpr):
         super().__init__({expr: 1.0})
 
     def __hash__(self) -> int:
-        return frozenset(self).__hash__()
+        return dumps(self).__hash__()
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}({tuple(self)[0]})"
