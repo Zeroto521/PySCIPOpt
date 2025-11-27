@@ -136,6 +136,10 @@ class Expr:
             f"unsupported operand type(s) for *: 'Expr' and '{type(other)}'"
         )
 
+    def __imul__(self, other):
+        self = self.__mul__(other)
+        return self
+
     def __rmul__(self, other):
         return self.__mul__(other)
 
@@ -279,7 +283,7 @@ class PolynomialExpr(Expr):
         other = Expr.from_const_or_var(other)
         if isinstance(other, PolynomialExpr):
             for child, coef in other.children.items():
-                self.children[child] = self.children.get(child, 0.0) + coef
+                self.children[child] = self[child] + coef
             return self
         return super().__iadd__(other)
 
@@ -290,9 +294,19 @@ class PolynomialExpr(Expr):
             for i in self:
                 for j in other:
                     child = i * j
-                    children[child] = children.get(child, 0.0) + self[i] * other[j]
+                    children[child] = self[child] + self[i] * other[j]
             return PolynomialExpr.to_subclass(children)
         return super().__mul__(other)
+
+    def __imul__(self, other):
+        other = Expr.from_const_or_var(other)
+        if isinstance(other, PolynomialExpr):
+            for i in self:
+                for j in other:
+                    child = i * j
+                    self.children[child] = self[child] + self[i] * other[j]
+            return self
+        return super().__imul__(other)
 
     def __truediv__(self, other):
         other = Expr.from_const_or_var(other)
