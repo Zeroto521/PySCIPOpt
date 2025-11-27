@@ -114,7 +114,11 @@ class Expr:
         )
 
     def __iadd__(self, other):
-        self = self.__add__(other)
+        other = Expr.from_const_or_var(other)
+        if Expr._is_sum(self):
+            self.children[other] = self[other] + 1
+        else:
+            self = self.__add__(other)
         return self
 
     def __radd__(self, other):
