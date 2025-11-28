@@ -265,6 +265,9 @@ class Expr:
             indices += [start + len(nodes) - 1]
         return nodes + [(type(self), indices)]
 
+    def _first_child(self) -> Union[Term, Expr]:
+        return next(self.__iter__())
+
 
 class PolynomialExpr(Expr):
     """Expression like `2*x**3 + 4*x*y + constant`."""
@@ -443,13 +446,13 @@ class PowExpr(FuncExpr):
         return dumps((self.children, self.expo)).__hash__()
 
     def __repr__(self) -> str:
-        return f"PowExpr({tuple(self)}, {self.expo})"
+        return f"PowExpr({self._first_child()}, {self.expo})"
 
     def _normalize(self) -> Expr:
         if self.expo == 0:
             self = ConstExpr(1.0)
         elif self.expo == 1:
-            self = tuple(self)[0]
+            self = self._first_child()
         return self
 
 
@@ -465,7 +468,7 @@ class UnaryExpr(FuncExpr):
         return dumps(self).__hash__()
 
     def __repr__(self) -> str:
-        return f"{type(self).__name__}({tuple(self)[0]})"
+        return f"{type(self).__name__}({self._first_child()})"
 
     @staticmethod
     def from_expr(expr: Union[Expr, MatrixExpr], cls: Type[UnaryExpr]) -> UnaryExpr:
