@@ -1577,6 +1577,9 @@ cdef class Variable:
     def to_expr(self):
         return MonomialExpr.from_var(self)
 
+    cdef float _eval(self, SCIP* scip, SCIP_SOL* sol):
+        return SCIPgetSolVal(scip, sol, self.scip_var)
+
     def vtype(self):
         """
         Retrieve the variables type (BINARY, INTEGER, IMPLINT or CONTINUOUS)

@@ -1,4 +1,5 @@
 ##@file expr.pxi
+import math
 from collections.abc import Hashable
 from numbers import Number
 from typing import Optional, Type, Union
@@ -53,6 +54,16 @@ class Term:
             if len(nodes) > 1:
                 nodes += [(ProdExpr, list(range(start, start + len(nodes))))]
             return nodes
+
+    cdef float _eval(self, SCIP* scip, SCIP_SOL* sol):
+        cdef Variable i
+        cdef float res
+
+        res = 1
+        for i in self.vars:
+            res *= SCIPgetSolVal(scip, sol, i.ptr())
+
+        return res
 
 
 CONST = Term()
@@ -259,6 +270,17 @@ class Expr:
             indices += [start + len(nodes) - 1]
         return nodes + [(type(self), indices)]
 
+    cdef float _eval(self, SCIP* scip, SCIP_SOL* sol):
+        cdef object child
+        cdef float coef
+        cdef float res
+
+        res = 0
+        for child, coef in self.children.items():
+            res += coef * child._eval(scip, sol)
+
+        return res
+
 
 class PolynomialExpr(Expr):
     """Expression like `2*x**3 + 4*x*y + constant`."""
@@ -335,6 +357,17 @@ class PolynomialExpr(Expr):
         if len(nodes) > 1:
             return nodes + [(Expr, list(range(start, start + len(nodes))))]
         return nodes
+
+    cdef float _eval(self, SCIP* scip, SCIP_SOL* sol):
+        cdef Term child
+        cdef float coef
+        cdef float res
+
+        res = 0
+        for child, coef in self.children.items():
+            res += coef * child._eval(scip, sol)
+
+        return res
 
 
 class ConstExpr(PolynomialExpr):
@@ -414,6 +447,17 @@ class ProdExpr(FuncExpr):
             return ConstExpr(0.0)
         return self
 
+    cdef float _eval(self, SCIP* scip, SCIP_SOL* sol):
+        cdef object i
+        cdef float coef
+        cdef float res
+
+        res = self.coef
+        for i in self:
+            res *= i._eval(scip, sol)
+
+        return res
+
 
 class PowExpr(FuncExpr):
     """Expression like `pow(expression, exponent)`."""
@@ -435,9 +479,14 @@ class PowExpr(FuncExpr):
             return tuple(self)[0]
         return self
 
+    cdef float _eval(self, SCIP* scip, SCIP_SOL* sol):
+        return self._first_child()._eval(scip, sol) ** self.expo
 
-class UnaryExpr(FuncExpr):
+
+cdef class UnaryExpr(FuncExpr):
     """Expression like `f(expression)`."""
+
+    cdef object op
 
     def __init__(self, expr: Union[Number, Variable, Term, Expr]):
         if isinstance(expr, Number):
@@ -466,35 +515,38 @@ class UnaryExpr(FuncExpr):
 
         return nodes + [(type(self), start + len(nodes) - 1)]
 
+    cdef float _eval(self, SCIP* scip, SCIP_SOL* sol):
+        return self.op(self._first_child()._eval(scip, sol))
+
 
 class AbsExpr(UnaryExpr):
     """Expression like `abs(expression)`."""
-    ...
+    op = abs
 
 
 class ExpExpr(UnaryExpr):
     """Expression like `exp(expression)`."""
-    ...
+    op = math.exp
 
 
 class LogExpr(UnaryExpr):
     """Expression like `log(expression)`."""
-    ...
+    op = math.log
 
 
 class SqrtExpr(UnaryExpr):
     """Expression like `sqrt(expression)`."""
-    ...
+    op = math.sqrt
 
 
 class SinExpr(UnaryExpr):
     """Expression like `sin(expression)`."""
-    ...
+    op = math.sin
 
 
 class CosExpr(UnaryExpr):
     """Expression like `cos(expression)`."""
-    ...
+    op = math.cos
 
 
 class ExprCons:
