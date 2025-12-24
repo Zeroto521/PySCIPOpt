@@ -3,44 +3,38 @@
 # TODO Add tests
 """
 
-import numpy as np
+from numbers import Number
 from typing import Union
 
+import numpy as np
 
-def _is_number(e):
-    try:
-        f = float(e)
-        return True
-    except ValueError: # for malformed strings
-        return False
-    except TypeError: # for other types (Variable, Expr)
-        return False
+from cpython.object cimport Py_EQ, Py_LE, Py_GE
 
 
-def _matrixexpr_richcmp(self, other, op):
-    def _richcmp(self, other, op):
-        if op == 1: # <=
-            return self.__le__(other)
-        elif op == 5: # >=
-            return self.__ge__(other)
-        elif op == 2: # ==
-            return self.__eq__(other)
+cdef class MatrixExprCons(np.ndarray):
+
+    @staticmethod
+    cdef MatrixExprCons _cmp(self, other, op):
+        if isinstance(other, (Number, Expr)):
+            res = np.empty(self.shape, dtype=object)
+            res.flat[:] = [op(i, other) for i in self.flat]
+        elif isinstance(other, np.ndarray):
+            out = np.broadcast(self, other)
+            res = np.empty(out.shape, dtype=object)
+            res.flat[:] = [op(i, j) for i, j in out]
         else:
-            raise NotImplementedError("Can only support constraints with '<=', '>=', or '=='.")
+            raise TypeError(f"Unsupported type {type(other)}")
 
-    if _is_number(other) or isinstance(other, Expr):
-        res = np.empty(self.shape, dtype=object)
-        res.flat = [_richcmp(i, other, op) for i in self.flat]
+        return res.view(MatrixExprCons)
 
-    elif isinstance(other, np.ndarray):
-        out = np.broadcast(self, other)
-        res = np.empty(out.shape, dtype=object)
-        res.flat = [_richcmp(i, j, op) for i, j in out]
-
-    else:
-        raise TypeError(f"Unsupported type {type(other)}")
-
-    return res.view(MatrixExprCons)
+    cdef MatrixExprCons __richcmp__(self, float other, int op):
+        if op == Py_LE:
+            return MatrixExprCons._cmp(self, other, lambda x, y: x <= y)
+        elif op == Py_GE:
+            return MatrixExprCons._cmp(self, other, lambda x, y: x >= y)
+        elif op == Py_EQ:
+            raise NotImplementedError("Cannot compare MatrixExprCons with '=='.")
+        raise NotImplementedError("Can only compare MatrixExprCons with '<=' or '>='.")
 
 
 cdef class MatrixBase(np.ndarray):
@@ -64,14 +58,14 @@ cdef class MatrixBase(np.ndarray):
             return quicksum(self.flat)
         return super().sum(**kwargs).view(MatrixExpr)
 
-    def __le__(self, other: Union[float, int, "Expr", np.ndarray, "MatrixExpr"]) -> MatrixExprCons:
-        return _matrixexpr_richcmp(self, other, 1)
-
-    def __ge__(self, other: Union[float, int, "Expr", np.ndarray, "MatrixExpr"]) -> MatrixExprCons:
-        return _matrixexpr_richcmp(self, other, 5)
-
-    def __eq__(self, other: Union[float, int, "Expr", np.ndarray, "MatrixExpr"]) -> MatrixExprCons:
-        return _matrixexpr_richcmp(self, other, 2)
+    cdef MatrixExprCons __richcmp__(self, other: Union[Number, Expr, np.ndarray, MatrixExpr], int op):
+        if op == Py_LE:
+            return MatrixExprCons._cmp(self, other, lambda x, y: x <= y)
+        elif op == Py_GE:
+            return MatrixExprCons._cmp(self, other, lambda x, y: x >= y)
+        elif op == Py_EQ:
+            return MatrixExprCons._cmp(self, other, lambda x, y: x >= y)
+        raise NotImplementedError("Can only compare MatrixExprCons with '<=', '>=' or '=='.")
 
     def _evaluate(self, SCIP* scip, SCIP_SOL* sol):
         res = np.zeros(self.shape, dtype=np.float64)
@@ -81,15 +75,3 @@ cdef class MatrixBase(np.ndarray):
 
 class MatrixExpr(MatrixBase):
     ...
-
-
-class MatrixExprCons(np.ndarray):
-
-    def __le__(self, other: Union[float, int, np.ndarray]) -> MatrixExprCons:
-        return _matrixexpr_richcmp(self, other, 1)
-
-    def __ge__(self, other: Union[float, int, np.ndarray]) -> MatrixExprCons:
-        return _matrixexpr_richcmp(self, other, 5)
-
-    def __eq__(self, other):
-        raise NotImplementedError("Cannot compare MatrixExprCons with '=='.")
