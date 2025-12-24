@@ -44,6 +44,10 @@ cdef class MatrixBase(np.ndarray):
         if return_scalar and isinstance(res, np.ndarray) and res.ndim == 0:
             return res.item()
         elif isinstance(res, np.ndarray):
+            if context is not None and context[0] in (
+                np.less_equal, np.greater_equal, np.equal
+            ):
+                return res.view(MatrixExprCons)
             return res.view(MatrixExpr)
         return res
 
