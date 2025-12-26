@@ -62,14 +62,20 @@ cdef class MatrixBase(np.ndarray):
             return quicksum(self.flat)
         return super().sum(**kwargs).view(MatrixExpr)
 
-    cdef MatrixExprCons __richcmp__(self, other: Union[Number, Expr, np.ndarray, MatrixExpr], int op):
+    cdef MatrixExprCons __richcmp__(
+        self,
+        other: Union[Number, Expr, np.ndarray, MatrixExpr],
+        int op,
+    ):
         if op == Py_LE:
             return MatrixExprCons._cmp(self, other, lambda x, y: x <= y)
         elif op == Py_GE:
             return MatrixExprCons._cmp(self, other, lambda x, y: x >= y)
         elif op == Py_EQ:
             return MatrixExprCons._cmp(self, other, lambda x, y: x >= y)
-        raise NotImplementedError("Can only compare MatrixExprCons with '<=', '>=' or '=='.")
+        raise NotImplementedError(
+            "Can only compare MatrixExprCons with '<=', '>=' or '=='."
+        )
 
     def _evaluate(self, SCIP* scip, SCIP_SOL* sol):
         res = np.zeros(self.shape, dtype=np.float64)
