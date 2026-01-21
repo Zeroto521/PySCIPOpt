@@ -1063,7 +1063,9 @@ cdef bool _is_expr_equal(Expr x, object y):
         return False
 
     cdef Expr _y = <Expr>y
-    if len(x.children) != len(_y.children) or x._hash != _y._hash:
+    if len(x.children) != len(_y.children) or (
+        x._hash != -1 and _y._hash != -1 and x._hash != _y._hash
+    ):
         return False
 
     cdef object t_x = type(x)
