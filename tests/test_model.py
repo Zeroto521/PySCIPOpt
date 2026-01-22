@@ -148,7 +148,6 @@ def test_multiple_cons_names():
     assert conss == m.getConss()
     assert m.getNConss() == 5
 
-
 def test_multiple_cons_params():
     """Test if setting the remaining parameters works as expected"""
     def assert_conss_neq(a, b):
@@ -302,8 +301,7 @@ def test_getObjective():
     m.addVar(obj=3, name="x2")
 
     assert str(m.getObjective()) == "Expr({Term(x1): 2.0, Term(x2): 3.0})"
-    
-    
+
 def test_getTreesizeEstimation():
     m = Model()
 
@@ -560,8 +558,50 @@ def test_getVarPseudocost():
     p = m.getVarPseudocost(var, SCIP_BRANCHDIR.UPWARDS)
     assert m.isEQ(p, 1)
 
+    m.optimize()
     m.updateVarPseudocost(var, 1, 12, 1)
     p = m.getVarPseudocost(var, SCIP_BRANCHDIR.UPWARDS)
 
     # Not exactly 12 because the new value is a weighted sum of all the updates
     assert m.isEQ(p, 12.0001)
+
+
+def test_freeTransform_repr():
+    """See Issue #604 and PR #1161."""
+    m = Model()
+
+    x = m.addVar("x", vtype='B', obj=1.0)
+    c = m.addCons(x >= 0, name="mycons")
+
+    m.setPresolve(SCIP_PARAMSETTING.OFF)
+    m.presolve()
+
+    transformed_x = m.getTransformedVar(x)
+    transformed_c = m.getTransformedCons(c)
+
+    assert repr(transformed_x) == "t_x"
+    assert repr(transformed_c) == "mycons"
+
+    # Without the fix in PR #1161, transformed objects would segfault
+    m.freeTransform()
+    assert repr(transformed_x) == ""
+    assert repr(transformed_c) == ""
+    assert repr(x) == "x"
+    assert repr(c) == "mycons"
+
+
+def test_model_dealloc_repr():
+    """See Issue #604 and PR #1161."""
+    import gc
+
+    def create_model_and_get_objects():
+        m = Model()
+        x = m.addVar("x", vtype='B', obj=1.0)
+        c = m.addCons(x >= 0, name="mycons")
+        return x, c
+
+    x, c = create_model_and_get_objects()
+    gc.collect()
+
+    assert repr(x) == ""
+    assert repr(c) == ""

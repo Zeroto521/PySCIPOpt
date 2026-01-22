@@ -2,17 +2,63 @@
 
 ## Unreleased
 ### Added
+- Added automated script for generating type stubs
+- Include parameter names in type stubs
+- Speed up MatrixExpr.sum(axis=...) via quicksum
+- Added structured_optimization_trace recipe for structured optimization progress tracking
+### Fixed
+- getBestSol() now returns None for infeasible problems instead of a Solution with NULL pointer
+- all fundamental callbacks now raise an error if not implemented
+- Fixed the type of MatrixExpr.sum(axis=...) result from MatrixVariable to MatrixExpr.
+- Updated IIS result in PyiisfinderExec()
+- Model.getVal now supports GenExpr type
+- Fixed lotsizing_lazy example
+- Fixed incorrect getVal() result when _bestSol.sol was outdated
+- Fixed segmentation fault when using Variable or Constraint objects after freeTransform() or Model destruction
+### Changed
+- changed default value of enablepricing flag to True
+- Speed up MatrixExpr.add.reduce via quicksum
+- Speed up np.ndarray(..., dtype=np.float64) @ MatrixExpr
+- Minimum numpy version increased from 1.16.0 to 1.19.0
+### Removed
+
+## 6.0.0 - 2025.xx.yy
+### Added
+- Support for SCIP 10.0.0
+- Added support for IIS - Irreducible Inconsistent Subsystems
+- Added 4 new events: TYPECHANGED, IMPLTYPECHANGED, DUALBOUNDIMPROVED, GAPUPDATED.
+- Support for new implied integrality
+- Wrapped varIsBinary(), varIsIntegral(), varIsImpliedIntegral(), varIsNonImpliedIntegral(), varGetImplType()
+- Interfaced some exact SCIP methods
+- wrapped SCIPprintStatisticsJson
+### Fixed
+### Changed
+### Removed
+- Removed methods chgAndConsCheckFlagWhenUpgr, chgAndConsRemovableFlagWhenUpgr
+
+## 5.7.0 - 2025.11.17
+### Added
 - Added possibility of having variables in exponent.
 - Added basic type stubs to help with IDE autocompletion and type checking.
 - MatrixVariable comparisons (<=, >=, ==) now support numpy's broadcast feature.
+- Added methods: getMaxDepth(), getPlungeDepth(), getLowerbound(), getCutoffbound(), getNNodeLPIterations(), getNStrongbranchLPIterations().
+- setup.py now automatically detects conda environments when SCIPOPTDIR is not defined.
+- Added function getStatus() to get variable status in variable class
+- Added function isActive() to get whether a variable is active in variable class
+- Added function markDoNotAggrVar() to prevent a variable from being aggregated
+- Added function markDoNotMultaggrVar() to prevent a variable from being multi-aggregated
 ### Fixed
 - Implemented all binary operations between MatrixExpr and GenExpr
 - Fixed the type of @ matrix operation result from MatrixVariable to MatrixExpr.
+- Fixed the case for returning None from the nodeselect callback in Node Selector plugins.
+- Fixed segmentation fault during Benders decomposition cleanup caused by double-free bug
 ### Changed
 - Add package extras for test dependencies in `pyproject.toml`
 - Speed up MatrixVariable.sum(axis=None) via quicksum
 - MatrixVariable now supports comparison with Expr
+- Benders subproblem memory is now automatically managed by the master Model - `freeBendersSubproblems()` is deprecated and no longer needed
 ### Removed
+
 
 ## 5.6.0 - 2025.08.26
 ### Added

@@ -4,7 +4,7 @@ from ._version import __version__
 import os
 if hasattr(os, 'add_dll_directory'):
     if os.getenv('SCIPOPTDIR'):
-        os.add_dll_directory(os.path.join(os.getenv('SCIPOPTDIR').strip('"'), 'bin'))
+        os.add_dll_directory(os.path.join(os.environ['SCIPOPTDIR'].strip('"'), 'bin'))
 
 # export user-relevant objects:
 from pyscipopt.Multidict import multidict as multidict
@@ -26,6 +26,7 @@ from pyscipopt.scip      import Prop as Prop
 from pyscipopt.scip      import Reader as Reader
 from pyscipopt.scip      import Sepa as Sepa
 from pyscipopt.scip      import LP as LP
+from pyscipopt.scip      import IISfinder as IISfinder 
 from pyscipopt.scip      import PY_SCIP_LPPARAM as SCIP_LPPARAM
 from pyscipopt.scip      import readStatistics as readStatistics
 from pyscipopt.scip      import Expr as Expr
@@ -53,5 +54,7 @@ from pyscipopt.scip      import PY_SCIP_LOCKTYPE        as SCIP_LOCKTYPE
 from pyscipopt.scip      import PY_SCIP_LPSOLSTAT       as SCIP_LPSOLSTAT
 from pyscipopt.scip      import PY_SCIP_BRANCHDIR       as SCIP_BRANCHDIR
 from pyscipopt.scip      import PY_SCIP_BENDERSENFOTYPE as SCIP_BENDERSENFOTYPE
-from pyscipopt.scip      import PY_SCIP_ROWORIGINTYPE   as SCIP_ROWORIGINTYPE
-from pyscipopt.scip      import PY_SCIP_SOLORIGIN       as SCIP_SOLORIGIN
+from pyscipopt.scip      import PY_SCIP_ROWORIGINTYPE as SCIP_ROWORIGINTYPE
+from pyscipopt.scip      import PY_SCIP_SOLORIGIN as SCIP_SOLORIGIN
+from pyscipopt.scip      import PY_SCIP_NODETYPE as SCIP_NODETYPE
+from pyscipopt.scip      import PY_SCIP_IMPLINTTYPE as SCIP_IMPLINTTYPE
