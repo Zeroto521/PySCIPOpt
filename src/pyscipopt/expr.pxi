@@ -48,6 +48,7 @@ from typing import TYPE_CHECKING, Literal
 import numpy as np
 
 from cpython.dict cimport PyDict_Next
+from cpython.object cimport Py_TYPE
 from cpython.ref cimport PyObject
 from pyscipopt.scip cimport Variable, Solution
 
@@ -676,6 +677,20 @@ cdef class GenExpr(ExprLike):
         '''returns operator of GenExpr'''
         return self._op
 
+    cdef GenExpr copy(self, bool copy = True):
+        cdef type cls = <type>Py_TYPE(self)
+        cdef GenExpr res = cls.__new__(cls)
+        res._op = self._op
+        res.children = self.children.copy() if copy else self.children
+        if cls is SumExpr:
+            res.constant = self.constant
+            res.coefs = self.coefs.copy() if copy else self.coefs
+        if cls is ProdExpr:
+            res.constant = self.constant
+        elif cls is PowExpr:
+            res.expo = self.expo
+        return res
+
 
 # Sum Expressions
 cdef class SumExpr(GenExpr):
@@ -775,10 +790,42 @@ cdef class UnaryExpr(GenExpr):
 
 # class for constant expressions
 cdef class Constant(GenExpr):
+
     cdef public number
+
     def __init__(self,number):
         self.number = number
         self._op = Operator.const
+
+    def __abs__(self) -> GenExpr:
+        cdef Constant res = <Constant>self.copy()
+        res.number = abs(res.number)
+        return res
+
+    def exp(self) -> GenExpr:
+        cdef Constant res = <Constant>self.copy()
+        res.number = math.exp(res.number)
+        return res
+
+    def log(self) -> GenExpr:
+        cdef Constant res = <Constant>self.copy()
+        res.number = math.log(res.number)
+        return res
+
+    def sqrt(self) -> GenExpr:
+        cdef Constant res = <Constant>self.copy()
+        res.number = math.sqrt(res.number)
+        return res
+
+    def sin(self) -> GenExpr:
+        cdef Constant res = <Constant>self.copy()
+        res.number = math.sin(res.number)
+        return res
+
+    def cos(self) -> GenExpr:
+        cdef Constant res = <Constant>self.copy()
+        res.number = math.cos(res.number)
+        return res
 
     def __repr__(self):
         return str(self.number)
