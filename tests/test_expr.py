@@ -2,8 +2,9 @@ import math
 
 import numpy as np
 import pytest
+
 from pyscipopt import Model, cos, exp, log, sin, sqrt
-from pyscipopt.scip import Expr, ExprCons, GenExpr, Term
+from pyscipopt.scip import Expr, ExprCons, GenExpr, Term, buildGenExprObj
 
 
 @pytest.fixture(scope="module")
@@ -238,3 +239,15 @@ def test_unary(model):
         str(np.sqrt([x, y]))
         == "[sqrt(sum(0.0,prod(1.0,x))) sqrt(sum(0.0,prod(1.0,y)))]"
     )
+
+
+def test_constant_unary():
+    C = 42.0
+    c = buildGenExprObj(42.0)
+
+    assert str(abs(c)) == str(C)
+    assert str(exp(c)) == str(np.exp(C))
+    assert str(log(c)) == str(np.log(C))
+    assert str(sqrt(c)) == str(np.sqrt(C))
+    assert str(sin(c)) == str(np.sin(C))
+    assert str(cos(c)) == str(np.cos(C))
