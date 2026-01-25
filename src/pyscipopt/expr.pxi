@@ -797,32 +797,32 @@ cdef class Constant(GenExpr):
         self.number = number
         self._op = Operator.const
 
-    def __abs__(self) -> GenExpr:
+    def __abs__(self) -> Constant:
         cdef Constant res = <Constant>self.copy()
         res.number = abs(res.number)
         return res
 
-    def exp(self) -> GenExpr:
+    def exp(self) -> Constant:
         cdef Constant res = <Constant>self.copy()
         res.number = math.exp(res.number)
         return res
 
-    def log(self) -> GenExpr:
+    def log(self) -> Constant:
         cdef Constant res = <Constant>self.copy()
         res.number = math.log(res.number)
         return res
 
-    def sqrt(self) -> GenExpr:
+    def sqrt(self) -> Constant:
         cdef Constant res = <Constant>self.copy()
         res.number = math.sqrt(res.number)
         return res
 
-    def sin(self) -> GenExpr:
+    def sin(self) -> Constant:
         cdef Constant res = <Constant>self.copy()
         res.number = math.sin(res.number)
         return res
 
-    def cos(self) -> GenExpr:
+    def cos(self) -> Constant:
         cdef Constant res = <Constant>self.copy()
         res.number = math.cos(res.number)
         return res
