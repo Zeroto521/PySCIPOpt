@@ -669,3 +669,10 @@ def test_evaluate():
 
     assert type(m.getVal(x)) is np.ndarray
     assert m.getVal(x).sum() == 1
+
+
+def test_vtype():
+    m = Model()
+    x = m.addMatrixVar(2, vtype="B")
+
+    assert (x.vtype() == "BINARY").all()
