@@ -1962,7 +1962,13 @@ cdef class Variable(Expr):
 
 class MatrixVariable(MatrixExpr):
 
-    def _apply_method(self, method: str, dtype: type = object, *args, **kwargs):
+    def _apply_method(
+        self,
+        method: str,
+        dtype: type = object,
+        *args,
+        **kwargs,
+    ) -> np.ndarray:
         func = getattr(Variable, method)
         data = [func(v, *args, **kwargs) for v in self.flat]
         return np.array(data, dtype=dtype).reshape(self.shape)

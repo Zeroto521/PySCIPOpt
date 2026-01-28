@@ -1,6 +1,6 @@
-from typing import ClassVar
+from typing import Any, ClassVar
 
-import numpy
+import numpy as np
 from _typeshed import Incomplete
 from typing_extensions import disjoint_base
 
@@ -496,7 +496,7 @@ class LP:
     def solve(self, dual: Incomplete = ...) -> Incomplete: ...
     def writeLP(self, filename: Incomplete) -> Incomplete: ...
 
-class MatrixConstraint(numpy.ndarray):
+class MatrixConstraint(np.ndarray):
     def getConshdlrName(self) -> Incomplete: ...
     def isActive(self) -> Incomplete: ...
     def isChecked(self) -> Incomplete: ...
@@ -512,7 +512,7 @@ class MatrixConstraint(numpy.ndarray):
     def isSeparated(self) -> Incomplete: ...
     def isStickingAtNode(self) -> Incomplete: ...
 
-class MatrixExpr(numpy.ndarray):
+class MatrixExpr(np.ndarray):
     def _evaluate(self, sol: Incomplete) -> Incomplete: ...
     def __array_ufunc__(
         self,
@@ -522,7 +522,7 @@ class MatrixExpr(numpy.ndarray):
         **kwargs: Incomplete,
     ) -> Incomplete: ...
 
-class MatrixExprCons(numpy.ndarray):
+class MatrixExprCons(np.ndarray):
     def __array_ufunc__(
         self,
         ufunc: Incomplete,
@@ -535,6 +535,13 @@ class MatrixExprCons(numpy.ndarray):
 class MatrixGenExpr(MatrixExpr): ...
 
 class MatrixVariable(MatrixExpr):
+    def _apply_method(
+        self,
+        method: str,
+        dtype: type = ...,
+        *args: Any,
+        **kwargs: Any,
+    ) -> np.ndarray: ...
     def getAvgSol(self) -> Incomplete: ...
     def getCol(self) -> Incomplete: ...
     def getIndex(self) -> Incomplete: ...
