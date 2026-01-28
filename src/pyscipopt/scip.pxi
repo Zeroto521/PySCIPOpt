@@ -1962,7 +1962,7 @@ cdef class Variable(Expr):
 
 class MatrixVariable(MatrixExpr):
 
-    def _apply_op(self, method: str, dtype: type = object, *args, **kwargs):
+    def _apply_method(self, method: str, dtype: type = object, *args, **kwargs):
         func = getattr(Variable, method)
         data = [func(v, *args, **kwargs) for v in self.flat]
         return np.array(data, dtype=dtype).reshape(self.shape)
@@ -1977,7 +1977,7 @@ class MatrixVariable(MatrixExpr):
             A matrix containing "BINARY", "INTEGER", "CONTINUOUS", or "IMPLINT"
 
         """
-        return self._apply_op("vtype")
+        return self._apply_method("vtype")
 
     def isInLP(self):
         """
@@ -1989,7 +1989,7 @@ class MatrixVariable(MatrixExpr):
             An array of bools
 
         """
-        return self._apply_op("isInLP", bool)
+        return self._apply_method("isInLP", bool)
 
     def getIndex(self):
         """
@@ -2000,7 +2000,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
             An array of integers. No two should be the same
         """
-        return self._apply_op("getIndex", int)
+        return self._apply_method("getIndex", int)
 
     def getCol(self):
         """
@@ -2011,7 +2011,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
             An array of Column objects
         """
-        return self._apply_op("getCol")
+        return self._apply_method("getCol")
 
     def getLbOriginal(self):
         """
@@ -2022,7 +2022,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        return self._apply_op("getLbOriginal", float)
+        return self._apply_method("getLbOriginal", float)
 
     def getUbOriginal(self):
         """
@@ -2033,7 +2033,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        return self._apply_op("getUbOriginal", float)
+        return self._apply_method("getUbOriginal", float)
 
     def getLbGlobal(self):
         """
@@ -2044,7 +2044,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        return self._apply_op("getLbGlobal", float)
+        return self._apply_method("getLbGlobal", float)
 
     def getUbGlobal(self):
         """
@@ -2055,7 +2055,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        return self._apply_op("getUbGlobal", float)
+        return self._apply_method("getUbGlobal", float)
 
     def getLbLocal(self):
         """
@@ -2066,7 +2066,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        return self._apply_op("getLbLocal", float)
+        return self._apply_method("getLbLocal", float)
 
     def getUbLocal(self):
         """
@@ -2077,7 +2077,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        return self._apply_op("getUbLocal", float)
+        return self._apply_method("getUbLocal", float)
 
     def getObj(self):
         """
@@ -2088,7 +2088,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        return self._apply_op("getObj", float)
+        return self._apply_method("getObj", float)
 
     def getLPSol(self):
         """
@@ -2099,7 +2099,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        return self._apply_op("getLPSol", float)
+        return self._apply_method("getLPSol", float)
 
     def getAvgSol(self):
         """
@@ -2110,7 +2110,7 @@ class MatrixVariable(MatrixExpr):
         np.ndarray
 
         """
-        return self._apply_op("getAvgSol", float)
+        return self._apply_method("getAvgSol", float)
 
     def varMayRound(self, direction="down"):
         """
@@ -2127,7 +2127,7 @@ class MatrixVariable(MatrixExpr):
             An array of bools
 
         """
-        return self._apply_op("varMayRound", bool)
+        return self._apply_method("varMayRound", bool)
 
 
 cdef class Constraint:
