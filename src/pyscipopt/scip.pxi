@@ -1963,10 +1963,9 @@ cdef class Variable(Expr):
 class MatrixVariable(MatrixExpr):
 
     def _apply_op(self, method: str, dtype: type = object, *args, **kwargs):
-        def op(var):
-            return getattr(var, method)(*args, **kwargs)
-
-        return np.frompyfunc(op, 1, 1)(self).astype(dtype)
+        func = getattr(Variable, method)
+        data = [func(v, *args, **kwargs) for v in self.flat]
+        return np.array(data, dtype=dtype).reshape(self.shape)
 
     def vtype(self):
         """
