@@ -637,7 +637,7 @@ cdef class GenExpr:
     #        self.children.append(right)
     #    return self
 
-    def __pow__(self, other, modulo):
+    def __pow__(self, other):
         expo = buildGenExprObj(other)
         if expo.getOp() != Operator.const:
             raise TypeError("excepted a constant exponent")
