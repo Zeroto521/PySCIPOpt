@@ -181,7 +181,7 @@ cdef class Term:
 CONST = Term()
 
 # helper function
-def buildGenExprObj(expr):
+def buildGenExprObj(expr) -> GenExpr:
     """helper function to generate an object of type GenExpr"""
     if _is_number(expr):
         return Constant(expr)
@@ -323,29 +323,40 @@ cdef class Expr:
         ''' other / self '''
         return buildGenExprObj(other) / self
 
-    def __pow__(self, other, modulo):
-        if float(other).is_integer() and other >= 0:
-            exp = int(other)
-        else: # need to transform to GenExpr
-            return buildGenExprObj(self)**other
+    def __pow__(self, other):
+        if not _is_number(other):
+            raise TypeError("excepted a constant exponent")
 
-        res = 1
-        for _ in range(exp):
-            res *= self
-        return res
+        if _is_number(other):
+            if other == 0:
+                return Expr({CONST: 1.0})
+            elif other == 1:
+                return self.copy()
+        elif len(self.terms) == 0 or (len(self.terms) == 1 and CONST in self.terms):
+            if other > 0:
+                return Expr({CONST: 0.0})
+            raise ZeroDivisionError("0.0 cannot be raised to a negative power")
+
+        if float(other).is_integer() and other >= 0:
+            res = 1
+            for _ in range(int(other)):
+                res *= self
+            return res
+        return buildGenExprObj(self)**other
 
     def __rpow__(self, other):
         """
-        Implements base**x as scip.exp(x * scip.log(base)).
+        Implements base**x as scip.exp(x * math.log(base)).
         Note: base must be positive.
         """
-        if _is_number(other):
-            base = float(other)
-            if base <= 0.0:
-                raise ValueError("Base of a**x must be positive, as expression is reformulated to scip.exp(x * scip.log(a)); got %g" % base)
-            return exp(self * log(base))
-        else:
-            raise TypeError(f"Unsupported base type {type(other)} for exponentiation.")
+        if not _is_number(other):
+            raise TypeError("excepted a constant exponent")
+
+        if other == 1:
+            return Expr({CONST: 1.0})
+        elif other <= 0:
+            raise ValueError("excepted a positive base")
+        return exp(self * math.log(other))
 
     def __neg__(self):
         return Expr({v:-c for v,c in self.terms.items()})
@@ -392,6 +403,11 @@ cdef class Expr:
             term = <Term>key_ptr
             coef = <double>(<object>val_ptr)
             res += coef * term._evaluate(sol)
+        return res
+
+    cdef Expr copy(self, bool copy = True):
+        cdef Expr res = Expr.__new__(Expr)
+        res.terms = self.terms.copy() if copy else self.terms
         return res
 
 
