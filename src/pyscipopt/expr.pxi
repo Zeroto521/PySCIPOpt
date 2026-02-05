@@ -353,7 +353,7 @@ cdef class Expr:
             raise TypeError("excepted a constant exponent")
 
         if other == 1:
-            return Expr({CONST: 1.0})
+            return self.copy()
         elif other <= 0:
             raise ValueError("excepted a positive base")
         return exp(self * math.log(other))
