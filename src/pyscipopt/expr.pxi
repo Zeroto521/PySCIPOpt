@@ -640,27 +640,27 @@ cdef class GenExpr:
     def __pow__(self, other, modulo):
         expo = buildGenExprObj(other)
         if expo.getOp() != Operator.const:
-            raise NotImplementedError("exponents must be numbers")
-        if self.getOp() == Operator.const:
-            return Constant(self.number**expo.number)
+            raise TypeError("excepted a constant exponent")
+
         ans = PowExpr()
         ans.children.append(self)
         ans.expo = expo.number
-
         return ans
 
     def __rpow__(self, other):
         """
-        Implements base**x as scip.exp(x * scip.log(base)). 
+        Implements base**x as scip.exp(x * math.log(base)). 
         Note: base must be positive.
         """
-        if _is_number(other):
-            base = float(other)
-            if base <= 0.0:
-                raise ValueError("Base of a**x must be positive, as expression is reformulated to scip.exp(x * scip.log(a)); got %g" % base)
-            return exp(self * log(base))
-        else:
-            raise TypeError(f"Unsupported base type {type(other)} for exponentiation.")
+        expo = buildGenExprObj(other)
+        if expo.getOp() != Operator.const:
+            raise TypeError("excepted a constant exponent")
+
+        if expo.number == 1:
+            return self.copy()
+        elif expo.number <= 0:
+            raise ValueError("excepted a positive base")
+        return exp(self * math.log(expo.number))
 
     #TODO: ipow, idiv, etc
     def __truediv__(self,other):
@@ -824,6 +824,12 @@ cdef class Constant(GenExpr):
     def __init__(self,number):
         self.number = number
         self._op = Operator.const
+
+    def __pow__(self, other):
+        expo = buildGenExprObj(other)
+        if expo.getOp() == Operator.const:
+            return Constant(self.number**expo.number)
+        return super().__pow__(other)
 
     def __repr__(self):
         return str(self.number)
