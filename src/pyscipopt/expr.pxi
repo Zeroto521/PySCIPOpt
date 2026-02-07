@@ -10,7 +10,6 @@ from libc.math cimport cos as ccos
 from libc.math cimport exp as cexp
 from libc.math cimport fabs as cfabs
 from libc.math cimport log as clog
-from libc.math cimport pow as cpow
 from libc.math cimport sqrt as csqrt
 from libc.math cimport sin as csin
 from pyscipopt.scip cimport Variable, Solution
@@ -825,7 +824,7 @@ cdef class AbsExpr(UnaryExpr):
         return <AbsExpr>self.copy()
 
     cpdef double _evaluate(self, Solution sol) except *:
-        return abs(_fchild(self)._evaluate(sol))
+        return cfabs(_fchild(self)._evaluate(sol))
 
 
 cdef class ExpExpr(UnaryExpr):
