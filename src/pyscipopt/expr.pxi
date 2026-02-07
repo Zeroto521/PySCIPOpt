@@ -1,5 +1,4 @@
 ##@file expr.pxi
-import math
 from typing import TYPE_CHECKING, Iterator, Optional, Type, Union
 
 import numpy as np
@@ -7,6 +6,13 @@ import numpy as np
 from cpython.dict cimport PyDict_Next, PyDict_GetItem
 from cpython.tuple cimport PyTuple_GET_ITEM
 from cpython.object cimport Py_LE, Py_EQ, Py_GE, PyObject
+from libc.math cimport cos as ccos
+from libc.math cimport exp as cexp
+from libc.math cimport fabs as cfabs
+from libc.math cimport log as clog
+from libc.math cimport pow as cpow
+from libc.math cimport sqrt as csqrt
+from libc.math cimport sin as csin
 from pyscipopt.scip cimport Variable, Solution
 
 
@@ -569,22 +575,22 @@ cdef class ConstExpr(PolynomialExpr):
         return _const(-_c(self))
 
     def __abs__(self) -> ConstExpr:
-        return _const(abs(_c(self)))
+        return _const(cfabs(_c(self)))
 
     def exp(self) -> ConstExpr:
-        return _const(math.exp(_c(self)))
+        return _const(cexp(_c(self)))
 
     def log(self) -> ConstExpr:
-        return _const(math.log(_c(self)))
+        return _const(clog(_c(self)))
 
     def sqrt(self) -> ConstExpr:
-        return _const(math.sqrt(_c(self)))
+        return _const(csqrt(_c(self)))
 
     def sin(self) -> ConstExpr:
-        return _const(math.sin(_c(self)))
+        return _const(csin(_c(self)))
 
     def cos(self) -> ConstExpr:
-        return _const(math.cos(_c(self)))
+        return _const(ccos(_c(self)))
 
     cpdef list _to_node(self, double coef = 1, int start = 0):
         cdef double res = _c(self) * coef
@@ -826,35 +832,35 @@ cdef class ExpExpr(UnaryExpr):
     """Expression like `exp(expression)`."""
 
     cpdef double _evaluate(self, Solution sol) except *:
-        return math.exp(_fchild(self)._evaluate(sol))
+        return cexp(_fchild(self)._evaluate(sol))
 
 
 cdef class LogExpr(UnaryExpr):
     """Expression like `log(expression)`."""
 
     cpdef double _evaluate(self, Solution sol) except *:
-        return math.log(_fchild(self)._evaluate(sol))
+        return clog(_fchild(self)._evaluate(sol))
 
 
 cdef class SqrtExpr(UnaryExpr):
     """Expression like `sqrt(expression)`."""
 
     cpdef double _evaluate(self, Solution sol) except *:
-        return math.sqrt(_fchild(self)._evaluate(sol))
+        return csqrt(_fchild(self)._evaluate(sol))
 
 
 cdef class SinExpr(UnaryExpr):
     """Expression like `sin(expression)`."""
 
     cpdef double _evaluate(self, Solution sol) except *:
-        return math.sin(_fchild(self)._evaluate(sol))
+        return csin(_fchild(self)._evaluate(sol))
 
 
 cdef class CosExpr(UnaryExpr):
     """Expression like `cos(expression)`."""
 
     cpdef double _evaluate(self, Solution sol) except *:
-        return math.cos(_fchild(self)._evaluate(sol))
+        return ccos(_fchild(self)._evaluate(sol))
 
 
 cdef class ExprCons:
