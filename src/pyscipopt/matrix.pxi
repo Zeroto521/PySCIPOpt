@@ -19,6 +19,8 @@ cnp.import_array()
 
 class MatrixExpr(np.ndarray):
 
+    __array_priority__ = 100
+
     def __array_ufunc__(
         self,
         ufunc: np.ufunc,
@@ -80,6 +82,8 @@ class MatrixExpr(np.ndarray):
 
 
 class MatrixExprCons(np.ndarray):
+
+    __array_priority__ = 101
 
     def __array_ufunc__(self, ufunc, method, *args, **kwargs):
         if method == "__call__":
