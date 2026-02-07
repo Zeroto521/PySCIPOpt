@@ -310,7 +310,7 @@ cdef class Expr(ExprLike):
             if _is_single_poly(res := _expr(_to_dict(_other, self))):
                 return _to_poly(res)
             return res
-        elif _is_expr_equal(self, _other):
+        elif self is _other:
             return self * _const(2.0)
         return _expr({_wrap(self): 1.0, _wrap(_other): 1.0})
 
@@ -339,15 +339,13 @@ cdef class Expr(ExprLike):
         if not isinstance(other, EXPR_OP_TYPES):
             return NotImplemented
         cdef Expr _other = _to_expr(other)
-        if _is_expr_equal(self, _other):
-            return _const(0.0)
-        return self + (-_other)
+        return _const(0.0) if self is _other else self + (-_other)
 
     def __isub__(self, other: Union[Number, Variable, Expr]) -> Expr:
         if not isinstance(other, EXPR_OP_TYPES):
             return NotImplemented
         cdef Expr _other = _to_expr(other)
-        return _const(0.0) if _is_expr_equal(self, _other) else self.__iadd__(-_other)
+        return _const(0.0) if self is _other else self.__iadd__(-_other)
 
     def __mul__(self, other: Union[Number, Variable, Expr]) -> Expr:
         if not isinstance(other, EXPR_OP_TYPES):
@@ -363,7 +361,7 @@ cdef class Expr(ExprLike):
             if _is_sum(self):
                 return _expr(_normalize(self, _c(_other)))
             return _expr({_wrap(self): _c(_other)})
-        elif _is_expr_equal(self, _other):
+        elif self is _other:
             return _pow(_wrap(self), 2.0)
         return _prod((_wrap(self), _wrap(_other)))
 
