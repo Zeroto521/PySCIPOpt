@@ -959,19 +959,19 @@ cdef double INF = float("inf")
 cdef tuple NUMBER_TYPES = (int, float, np.number)
 cdef tuple EXPR_OP_TYPES = NUMBER_TYPES + (Variable, Expr)
 CONST = Term()
-UNARY_MAP = {
-    np.absolute: "__abs__",
-    np.exp: "exp",
-    np.log: "log",
-    np.sqrt: "sqrt",
-    np.sin: "sin",
-    np.cos: "cos"
-}
 exp = np.exp
 log = np.log
 sqrt = np.sqrt
 sin = np.sin
 cos = np.cos
+UNARY_MAP = {
+    np.absolute: "__abs__",
+    exp: "exp",
+    log: "log",
+    sqrt: "sqrt",
+    sin: "sin",
+    cos: "cos"
+}
 
 
 cdef inline int _ensure_hash(int h) noexcept:
