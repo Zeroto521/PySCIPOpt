@@ -868,18 +868,15 @@ def cos(expr):
     else:
         return UnaryExpr(Operator.cos, buildGenExprObj(expr))
 
+
 def expr_to_nodes(expr):
-    '''transforms tree to an array of nodes. each node is an operator and the position of the 
-    children of that operator (i.e. the other nodes) in the array'''
+    """transforms tree to an array of nodes. each node is an operator and the position of the
+    children of that operator (i.e. the other nodes) in the array"""
     assert isinstance(expr, GenExpr)
     nodes = []
     expr_to_array(expr, nodes)
     return nodes
 
-def value_to_array(val, nodes):
-    """adds a given value to an array"""
-    nodes.append(tuple(['const', [val]]))
-    return len(nodes) - 1
 
 # there many hacky things here: value_to_array is trying to mimick
 # the multiple dispatch of julia. Also that we have to ask which expression is which
@@ -889,21 +886,22 @@ def value_to_array(val, nodes):
 def expr_to_array(expr, nodes):
     """adds expression to array"""
     op = expr._op
-    if op == Operator.const: # FIXME: constant expr should also have children!
+    if op == Operator.const:  # FIXME: constant expr should also have children!
         nodes.append(tuple([op, [expr.number]]))
     elif op != Operator.varidx:
         indices = []
-        nchildren = len(expr.children)
         for child in expr.children:
-            pos = expr_to_array(child, nodes) # position of child in the final array of nodes, 'nodes'
-            indices.append(pos)
+            # position of child in the final array of nodes, 'nodes'
+            indices.append(expr_to_array(child, nodes))
         if op == Operator.power:
-            pos = value_to_array(expr.expo, nodes)
-            indices.append(pos)
-        elif (op == Operator.add and expr.constant != 0.0) or (op == Operator.prod and expr.constant != 1.0):
-            pos = value_to_array(expr.constant, nodes)
-            indices.append(pos)
-        nodes.append( tuple( [op, indices] ) )
-    else: # var
-        nodes.append( tuple( [op, expr.children] ) )
+            nodes.append(tuple(["const", [expr.expo]]))
+            indices.append(len(nodes) - 1)
+        elif (op == Operator.add and expr.constant != 0) or (
+            op == Operator.prod and expr.constant != 1
+        ):
+            nodes.append(tuple(["const", [expr.constant]]))
+            indices.append(len(nodes) - 1)
+        nodes.append(tuple([op, indices]))
+    else:  # var
+        nodes.append(tuple([op, expr.children]))
     return len(nodes) - 1
