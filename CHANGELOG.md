@@ -6,7 +6,8 @@
 - Added `getMemUsed()`, `getMemTotal()`, and `getMemExternEstim()` methods
 ### Fixed
 - Removed `Py_INCREF`/`Py_DECREF` on `Model` in `catchEvent`/`dropEvent` that caused memory leak for imbalanced usage
-- Used `getIndex()` instead of `ptr()` for sorting nonlinear expression terms to avoid nondeterministic behavior 
+- Used `getIndex()` instead of `ptr()` for sorting nonlinear expression terms to avoid nondeterministic behavior
+- Generalize `SumExpr.coefs` to support arbitrary numeric values instead of a fixed unit value (1)
 ### Changed
 - Speed up `constant * Expr` via C-level API
 ### Removed
