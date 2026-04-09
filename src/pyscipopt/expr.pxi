@@ -878,31 +878,6 @@ cdef class Constant(GenExpr):
         res.number = abs(res.number)
         return res
 
-    def exp(self) -> Constant:
-        cdef Constant res = <Constant>self.copy()
-        res.number = math.exp(res.number)
-        return res
-
-    def log(self) -> Constant:
-        cdef Constant res = <Constant>self.copy()
-        res.number = math.log(res.number)
-        return res
-
-    def sqrt(self) -> Constant:
-        cdef Constant res = <Constant>self.copy()
-        res.number = math.sqrt(res.number)
-        return res
-
-    def sin(self) -> Constant:
-        cdef Constant res = <Constant>self.copy()
-        res.number = math.sin(res.number)
-        return res
-
-    def cos(self) -> Constant:
-        cdef Constant res = <Constant>self.copy()
-        res.number = math.cos(res.number)
-        return res
-
     def __repr__(self):
         return str(self.number)
 
