@@ -4,14 +4,7 @@ import numpy as np
 import pytest
 
 from pyscipopt import Model, cos, exp, log, quickprod, sin, sqrt
-from pyscipopt.scip import (
-    CONST,
-    Expr,
-    ExprCons,
-    GenExpr,
-    MatrixGenExpr,
-    buildGenExprObj,
-)
+from pyscipopt.scip import CONST, Expr, ExprCons, GenExpr, MatrixGenExpr
 
 
 @pytest.fixture(scope="module")
