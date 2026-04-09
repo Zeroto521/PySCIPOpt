@@ -3,8 +3,15 @@ import math
 import numpy as np
 import pytest
 
-from pyscipopt import Model, cos, exp, log, sin, sqrt
-from pyscipopt.scip import Expr, ExprCons, GenExpr, Term, buildGenExprObj
+from pyscipopt import Model, cos, exp, log, quickprod, sin, sqrt
+from pyscipopt.scip import (
+    CONST,
+    Expr,
+    ExprCons,
+    GenExpr,
+    MatrixGenExpr,
+    buildGenExprObj,
+)
 
 
 @pytest.fixture(scope="module")
@@ -15,7 +22,6 @@ def model():
     z = m.addVar("z")
     return m, x, y, z
 
-CONST = Term()
 
 def test_upgrade(model):
     m, x, y, z = model
@@ -120,11 +126,11 @@ def test_genexpr_op_genexpr(model):
     assert isinstance(1/x**1.5 - genexpr, GenExpr)
     assert isinstance(y/x - exp(genexpr), GenExpr)
 
-    genexpr **= sqrt(2)
-    assert isinstance(genexpr, GenExpr)
+    # sqrt(2) is not a constant expression and
+    # we can only power to constant expressions!
+    with pytest.raises(NotImplementedError):
+        genexpr **= sqrt(2)
 
-    with pytest.raises(TypeError):
-        genexpr **= sqrt("2")
 
 def test_degree(model):
     m, x, y, z = model
@@ -226,28 +232,106 @@ def test_getVal_with_GenExpr():
 def test_unary(model):
     m, x, y, z = model
 
-    assert str(abs(x)) == "abs(sum(0.0,prod(1.0,x)))"
-    assert str(np.absolute(x)) == "abs(sum(0.0,prod(1.0,x)))"
-    assert str(sin([x, y])) == "[sin(sum(0.0,prod(1.0,x))) sin(sum(0.0,prod(1.0,y)))]"
+    res = "abs(sum(0.0,prod(1.0,x)))"
+    assert str(abs(x)) == res
+    assert str(np.absolute(x)) == res
+
+    res = "[sin(sum(0.0,prod(1.0,x))) sin(sum(0.0,prod(1.0,y)))]"
+    assert str(sin([x, y])) == res
+    assert str(np.sin([x, y])) == res
+
+    res = "[cos(sum(0.0,prod(1.0,x))) cos(sum(0.0,prod(1.0,y)))]"
+    assert str(cos([x, y])) == res
+    assert str(np.cos([x, y])) == res
+
+    res = "[sqrt(sum(0.0,prod(1.0,x))) sqrt(sum(0.0,prod(1.0,y)))]"
+    assert str(sqrt([x, y])) == res
+    assert str(np.sqrt([x, y])) == res
+
+    res = "[exp(sum(0.0,prod(1.0,x))) exp(sum(0.0,prod(1.0,y)))]"
+    assert str(exp([x, y])) == res
+    assert str(np.exp([x, y])) == res
+
+    res = "[log(sum(0.0,prod(1.0,x))) log(sum(0.0,prod(1.0,y)))]"
+    assert str(log([x, y])) == res
+    assert str(np.log([x, y])) == res
+
+    assert str(log([1, x])) == "[log(1.0) log(sum(0.0,prod(1.0,x)))]"
+
+    assert str(sqrt(4)) == "sqrt(4.0)"
+    assert str(sqrt([4, 4])) == "[sqrt(4.0) sqrt(4.0)]"
+    assert str(exp(3)) == "exp(3.0)"
+    assert str(exp([3, 3])) == "[exp(3.0) exp(3.0)]"
+    assert str(log(5)) == "log(5.0)"
+    assert str(log([5, 5])) == "[log(5.0) log(5.0)]"
+    assert str(sin(1)) == "sin(1.0)"
+    assert str(sin([[1, 1]])) == "[[sin(1.0) sin(1.0)]]"
+    assert str(cos(1)) == "cos(1.0)"
+    assert str(cos([[1]])) == "[[cos(1.0)]]"
+
+    assert isinstance(sqrt(2), GenExpr)
+    assert isinstance(sqrt([2, 2]), MatrixGenExpr)
+    assert isinstance(sqrt([[2], [2]]), MatrixGenExpr)
+    assert isinstance(sqrt([2, x]), MatrixGenExpr)
+    assert isinstance(sqrt([[2], [x]]), MatrixGenExpr)
+
+    # test invalid unary operations
+    with pytest.raises(TypeError):
+        np.arcsin(x)
+
+    with pytest.raises(TypeError):
+        # forbid modifying Variable/Expr/GenExpr in-place via out parameter
+        np.sin(x, out=np.array([0]))
+
+
+def test_mul():
+    m = Model()
+    x = m.addVar(name="x")
+    y = m.addVar(name="y")
+
+    # test Expr * number
+    assert str((x + y) * 2.0) == "Expr({Term(x): 2.0, Term(y): 2.0})"
+    assert str(2.0 * (x + y)) == "Expr({Term(x): 2.0, Term(y): 2.0})"
+
+    # test Expr * Expr
+    assert str(Expr({CONST: 1.0}) * x) == "Expr({Term(x): 1.0})"
+    assert str(y * Expr({CONST: -1.0})) == "Expr({Term(y): -1.0})"
+    assert str((x - x) * y) == "Expr({Term(x, y): 0.0})"
+    assert str(y * (x - x)) == "Expr({Term(x, y): 0.0})"
     assert (
-        str(np.sin([x, y])) == "[sin(sum(0.0,prod(1.0,x))) sin(sum(0.0,prod(1.0,y)))]"
+        str((x + 1) * (y - 1))
+        == "Expr({Term(x, y): 1.0, Term(x): -1.0, Term(y): 1.0, Term(): -1.0})"
     )
     assert (
-        str(sqrt([x, y])) == "[sqrt(sum(0.0,prod(1.0,x))) sqrt(sum(0.0,prod(1.0,y)))]"
-    )
-    assert (
-        str(np.sqrt([x, y]))
-        == "[sqrt(sum(0.0,prod(1.0,x))) sqrt(sum(0.0,prod(1.0,y)))]"
+        str((x + 1) * (x + 1) * y)
+        == "Expr({Term(x, x, y): 1.0, Term(x, y): 2.0, Term(y): 1.0})"
     )
 
 
-def test_constant_unary():
-    C = 42.0
-    c = buildGenExprObj(42.0)
+def test_abs_abs_expr():
+    m = Model()
+    x = m.addVar(name="x")
 
-    assert str(abs(c)) == str(C)
-    assert str(exp(c)) == str(np.exp(C))
-    assert str(log(c)) == str(np.log(C))
-    assert str(sqrt(c)) == str(np.sqrt(C))
-    assert str(sin(c)) == str(np.sin(C))
-    assert str(cos(c)) == str(np.cos(C))
+    # should print abs(x) not abs(abs(x))
+    assert str(abs(abs(x))) == str(abs(x))
+
+
+def test_term_eq():
+    m = Model()
+
+    x = m.addMatrixVar(1000)
+    y = m.addVar()
+    z = m.addVar()
+
+    e1 = quickprod(x.flat)
+    e2 = quickprod(x.flat)
+    t1 = next(iter(e1))
+    t2 = next(iter(e2))
+    t3 = next(iter(e1 * y))
+    t4 = next(iter(e2 * z))
+
+    assert t1 == t1  # same term
+    assert t1 == t2  # same term
+    assert t3 != t4  # same length, but different term
+    assert t1 != t3  # different length
+    assert t1 != "not a term"  # different type

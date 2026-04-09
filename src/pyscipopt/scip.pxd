@@ -871,6 +871,18 @@ cdef extern from "scip/scip.h":
     SCIP_Longint SCIPvarGetNBranchingsCurrentRun(SCIP_VAR* var, SCIP_BRANCHDIR dir)
     SCIP_Bool SCIPvarMayRoundUp(SCIP_VAR* var)
     SCIP_Bool SCIPvarMayRoundDown(SCIP_VAR* var)
+    SCIP_Bool SCIPvarIsActive(SCIP_VAR* var)
+    SCIP_Real SCIPadjustedVarLb(SCIP* scip, SCIP_VAR* var, SCIP_Real lb)
+    SCIP_Real SCIPadjustedVarUb(SCIP* scip, SCIP_VAR* var, SCIP_Real ub)
+    SCIP_RETCODE SCIPaggregateVars(SCIP* scip,
+                                   SCIP_VAR* varx,
+                                   SCIP_VAR* vary,
+                                   SCIP_Real scalarx,
+                                   SCIP_Real scalary,
+                                   SCIP_Real rhs,
+                                   SCIP_Bool* infeasible,
+                                   SCIP_Bool* redundant,
+                                   SCIP_Bool* aggregated)
 
     # LP Methods
     SCIP_RETCODE SCIPgetLPColsData(SCIP* scip, SCIP_COL*** cols, int* ncols)
@@ -1473,6 +1485,7 @@ cdef extern from "scip/scip.h":
     int SCIPgetPlungeDepth(SCIP* scip)
     SCIP_Longint SCIPgetNNodeLPIterations(SCIP* scip)
     SCIP_Longint SCIPgetNStrongbranchLPIterations(SCIP* scip)
+    SCIP_Real SCIPgetPrimalDualIntegral(SCIP* scip)
 
     # Parameter Functions
     SCIP_RETCODE SCIPsetBoolParam(SCIP* scip, char* name, SCIP_Bool value)
@@ -1519,6 +1532,8 @@ cdef extern from "scip/scip.h":
     SCIP_RETCODE SCIPlpiGetPrimalRay(SCIP_LPI* lpi, SCIP_Real* ray)
     SCIP_RETCODE SCIPlpiGetDualfarkas(SCIP_LPI* lpi, SCIP_Real* dualfarkas)
     SCIP_RETCODE SCIPlpiGetBasisInd(SCIP_LPI* lpi, int* bind)
+    SCIP_RETCODE SCIPlpiGetBase(SCIP_LPI* lpi, int* cstat, int* rstat)
+    SCIP_RETCODE SCIPlpiSetBase(SCIP_LPI* lpi, const int* cstat, const int* rstat)
     SCIP_RETCODE SCIPlpiGetRealSolQuality(SCIP_LPI* lpi, SCIP_LPSOLQUALITY qualityindicator, SCIP_Real* quality)
     SCIP_RETCODE SCIPlpiGetIntpar(SCIP_LPI* lpi, SCIP_LPPARAM type, int* ival)
     SCIP_RETCODE SCIPlpiGetRealpar(SCIP_LPI* lpi, SCIP_LPPARAM type, SCIP_Real* dval)
@@ -1808,6 +1823,11 @@ cdef extern from "scip/scip_cons.h":
 cdef extern from "blockmemshell/memory.h":
     void BMScheckEmptyMemory()
     long long BMSgetMemoryUsed()
+
+cdef extern from "scip/scip_mem.h":
+    SCIP_Longint SCIPgetMemUsed(SCIP* scip)
+    SCIP_Longint SCIPgetMemTotal(SCIP* scip)
+    SCIP_Longint SCIPgetMemExternEstim(SCIP* scip)
 
 cdef extern from "scip/scip_expr.h":
     SCIP_RETCODE SCIPcreateExpr(SCIP* scip,
