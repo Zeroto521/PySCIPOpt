@@ -869,9 +869,19 @@ cdef class Constant(GenExpr):
 
     cdef public number
 
-    def __init__(self,number):
+    def __init__(self, number):
         self.number = number
         self._op = Operator.const
+
+    def __mul__(self, other) -> Union[Constant, GenExpr]:
+        if _is_number(other):
+            return Constant(self.number * other)
+        return super().__mul__(other)
+
+    def __pow__(self, other) -> Union[Constant, GenExpr]:
+        if _is_number(other):
+            return Constant(self.number ** other)
+        return super().__pow__(other)
 
     def __abs__(self) -> Constant:
         cdef Constant res = <Constant>self.copy()
