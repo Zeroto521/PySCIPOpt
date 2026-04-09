@@ -13,6 +13,9 @@
 ### Changed
 - Speed up `constant * Expr` via C-level API
 - Speed up `Term.__eq__` via the C-level API
+- `abs(Constant)` returns `Constant` instead of `GenExpr`
+- `Constant * Constant` and `Constant * number` return `Constant` instead of `GenExpr`
+- `Constant ** Constant` and `Constant ** number` return `Constant` instead of `GenExpr`
 ### Removed
 - Removed outdated warning about Make build system incompatibility
 - Removed `Term.ptrtuple` to optimize `Term` memory usage
