@@ -348,28 +348,38 @@ def test_constant_abs():
 
 
 def test_constant_mul():
-    c = sin(-1).children[0]
-    c_mul_constant =  c * -1
+    c1 = sin(-1).children[0]
+    c1_mul_constant =  c1 * -1
+    assert type(c1) is Constant
+    assert type(c1_mul_constant) is Constant
 
-    assert type(c) is Constant
-    assert type(c_mul_constant) is Constant
+    c2 = exp(0.5).children[0]
+    c1_mul_c2 = c1 * c2
+    assert type(c2) is Constant
+    assert type(c1_mul_c2) is Constant
+    assert str(c1_mul_c2) == "-0.5"
 
     m = Model()
     x = m.addVar("x")
-    c_mul_genexpr = c * x
-    assert type(c_mul_genexpr) is ProdExpr
-    assert str(c_mul_genexpr) == "prod(-1.0,sum(0.0,prod(1.0,x)))"
+    c1_mul_genexpr = c1 * x
+    assert type(c1_mul_genexpr) is ProdExpr
+    assert str(c1_mul_genexpr) == "prod(-1.0,sum(0.0,prod(1.0,x)))"
 
 
 def test_constant_pow():
-    c = sin(-1).children[0]
-    c_pow_constant =  c ** 2
+    c1 = sin(-2).children[0]
+    c1_pow_constant =  c1 ** 2
+    assert type(c1) is Constant
+    assert type(c1_pow_constant) is Constant
+    assert str(c1_pow_constant) == "4"
 
-    assert type(c) is Constant
-    assert type(c_pow_constant) is Constant
-    assert str(c_pow_constant) == "1"
+    c2 = exp(0).children[0]
+    c1_pow_c2 = c1 ** c2
+    assert type(c2) is Constant
+    assert type(c1_pow_c2) is Constant
+    assert str(c1_pow_c2) == "1"
 
     m = Model()
     x = m.addVar("x")
     with pytest.raises(NotImplementedError):
-        c ** x
+        c1 ** x
