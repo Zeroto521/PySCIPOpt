@@ -4,7 +4,15 @@ import numpy as np
 import pytest
 
 from pyscipopt import Model, cos, exp, log, quickprod, sin, sqrt
-from pyscipopt.scip import CONST, Expr, ExprCons, GenExpr, MatrixGenExpr
+from pyscipopt.scip import (
+    CONST,
+    Constant,
+    Expr,
+    ExprCons,
+    GenExpr,
+    MatrixGenExpr,
+    ProdExpr,
+)
 
 
 @pytest.fixture(scope="module")
@@ -328,3 +336,40 @@ def test_term_eq():
     assert t3 != t4  # same length, but different term
     assert t1 != t3  # different length
     assert t1 != "not a term"  # different type
+
+
+def test_constant_abs():
+    c = sin(-1).children[0]
+    c_abs = abs(c)
+
+    assert type(c) is Constant
+    assert type(c_abs) is Constant
+    assert str(c_abs) == "1"
+
+
+def test_constant_mul():
+    c = sin(-1).children[0]
+    c_mul_constant =  c * -1
+
+    assert type(c) is Constant
+    assert type(c_mul_constant) is Constant
+
+    m = Model()
+    x = m.addVar("x")
+    c_mul_genexpr = c * x
+    assert type(c_mul_genexpr) is ProdExpr
+    assert str(c_mul_genexpr) == "prod(-1.0,sum(0.0,prod(1.0,x)))"
+
+
+def test_constant_pow():
+    c = sin(-1).children[0]
+    c_pow_constant =  c ** 2
+
+    assert type(c) is Constant
+    assert type(c_pow_constant) is Constant
+    assert str(c_pow_constant) == "1"
+
+    m = Model()
+    x = m.addVar("x")
+    with pytest.raises(NotImplementedError):
+        c ** x
