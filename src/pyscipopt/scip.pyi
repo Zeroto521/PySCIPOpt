@@ -236,6 +236,7 @@ class Conshdlr:
 class Constant(GenExpr):
     number: Incomplete
     def __init__(self, *args: Incomplete, **kwargs: Incomplete) -> None: ...
+    def __abs__(self) -> Constant: ...
 
 @disjoint_base
 class Constraint:
