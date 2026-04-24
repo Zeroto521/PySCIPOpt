@@ -2150,7 +2150,7 @@ cdef class Column:
     cdef public object data
 
     @staticmethod
-    cdef create(SCIP_COL* scipcol)
+    cdef create(SCIP_COL* scip_col)
 
 cdef class ColumnExact:
     cdef SCIP_COLEXACT* scip_col_exact
@@ -2166,7 +2166,7 @@ cdef class Row:
     cdef public object data
 
     @staticmethod
-    cdef create(SCIP_ROW* sciprow)
+    cdef create(SCIP_ROW* scip_row)
 
 cdef class RowExact:
     cdef SCIP_ROWEXACT* scip_row_exact
@@ -2182,7 +2182,7 @@ cdef class NLRow:
     cdef public object data
 
     @staticmethod
-    cdef create(SCIP_NLROW* scipnlrow)
+    cdef create(SCIP_NLROW* scip_nlrow)
 
 cdef class Solution:
     cdef SCIP_SOL* sol
@@ -2211,7 +2211,7 @@ cdef class Node:
     cdef public object data
 
     @staticmethod
-    cdef create(SCIP_NODE* scipnode)
+    cdef create(SCIP_NODE* scip_node)
 
 cdef class Variable(Expr):
     cdef SCIP_VAR* scip_var
@@ -2219,7 +2219,7 @@ cdef class Variable(Expr):
     cdef public object data
 
     @staticmethod
-    cdef create(SCIP_VAR* scipvar)
+    cdef create(SCIP_VAR* scip_var)
 
 cdef class Constraint:
     cdef SCIP_CONS* scip_cons
@@ -2227,7 +2227,7 @@ cdef class Constraint:
     cdef public object data
 
     @staticmethod
-    cdef create(SCIP_CONS* scipcons)
+    cdef create(SCIP_CONS* scip_cons)
 
 cdef class IIS:
     cdef SCIP_IIS* _iis
