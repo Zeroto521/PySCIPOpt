@@ -737,6 +737,7 @@ cdef extern from "scip/scip.h":
     SCIP_Real SCIPepsilon(SCIP* scip)
     SCIP_Real SCIPfeastol(SCIP* scip)
     SCIP_RETCODE SCIPsetObjIntegral(SCIP* scip)
+    SCIP_Bool SCIPisObjIntegral(SCIP* scip)
     SCIP_Real SCIPgetLocalOrigEstimate(SCIP* scip)
     SCIP_Real SCIPgetLocalTransEstimate(SCIP* scip)
 
@@ -870,6 +871,18 @@ cdef extern from "scip/scip.h":
     SCIP_Longint SCIPvarGetNBranchingsCurrentRun(SCIP_VAR* var, SCIP_BRANCHDIR dir)
     SCIP_Bool SCIPvarMayRoundUp(SCIP_VAR* var)
     SCIP_Bool SCIPvarMayRoundDown(SCIP_VAR* var)
+    SCIP_Bool SCIPvarIsActive(SCIP_VAR* var)
+    SCIP_Real SCIPadjustedVarLb(SCIP* scip, SCIP_VAR* var, SCIP_Real lb)
+    SCIP_Real SCIPadjustedVarUb(SCIP* scip, SCIP_VAR* var, SCIP_Real ub)
+    SCIP_RETCODE SCIPaggregateVars(SCIP* scip,
+                                   SCIP_VAR* varx,
+                                   SCIP_VAR* vary,
+                                   SCIP_Real scalarx,
+                                   SCIP_Real scalary,
+                                   SCIP_Real rhs,
+                                   SCIP_Bool* infeasible,
+                                   SCIP_Bool* redundant,
+                                   SCIP_Bool* aggregated)
 
     # LP Methods
     SCIP_RETCODE SCIPgetLPColsData(SCIP* scip, SCIP_COL*** cols, int* ncols)
@@ -1472,6 +1485,7 @@ cdef extern from "scip/scip.h":
     int SCIPgetPlungeDepth(SCIP* scip)
     SCIP_Longint SCIPgetNNodeLPIterations(SCIP* scip)
     SCIP_Longint SCIPgetNStrongbranchLPIterations(SCIP* scip)
+    SCIP_Real SCIPgetPrimalDualIntegral(SCIP* scip)
 
     # Parameter Functions
     SCIP_RETCODE SCIPsetBoolParam(SCIP* scip, char* name, SCIP_Bool value)
@@ -1518,6 +1532,8 @@ cdef extern from "scip/scip.h":
     SCIP_RETCODE SCIPlpiGetPrimalRay(SCIP_LPI* lpi, SCIP_Real* ray)
     SCIP_RETCODE SCIPlpiGetDualfarkas(SCIP_LPI* lpi, SCIP_Real* dualfarkas)
     SCIP_RETCODE SCIPlpiGetBasisInd(SCIP_LPI* lpi, int* bind)
+    SCIP_RETCODE SCIPlpiGetBase(SCIP_LPI* lpi, int* cstat, int* rstat)
+    SCIP_RETCODE SCIPlpiSetBase(SCIP_LPI* lpi, const int* cstat, const int* rstat)
     SCIP_RETCODE SCIPlpiGetRealSolQuality(SCIP_LPI* lpi, SCIP_LPSOLQUALITY qualityindicator, SCIP_Real* quality)
     SCIP_RETCODE SCIPlpiGetIntpar(SCIP_LPI* lpi, SCIP_LPPARAM type, int* ival)
     SCIP_RETCODE SCIPlpiGetRealpar(SCIP_LPI* lpi, SCIP_LPPARAM type, SCIP_Real* dval)
@@ -1534,6 +1550,7 @@ cdef extern from "scip/scip.h":
     SCIP_RETCODE SCIPfreeReoptSolve(SCIP* scip)
     SCIP_RETCODE SCIPchgReoptObjective(SCIP* scip, SCIP_OBJSENSE objsense, SCIP_VAR** vars, SCIP_Real* coefs, int nvars)
     SCIP_RETCODE SCIPenableReoptimization(SCIP* scip, SCIP_Bool enable)
+    SCIP_Bool SCIPisReoptEnabled(SCIP* scip)
 
     BMS_BLKMEM* SCIPblkmem(SCIP* scip)
 
@@ -1807,6 +1824,11 @@ cdef extern from "scip/scip_cons.h":
 cdef extern from "blockmemshell/memory.h":
     void BMScheckEmptyMemory()
     long long BMSgetMemoryUsed()
+
+cdef extern from "scip/scip_mem.h":
+    SCIP_Longint SCIPgetMemUsed(SCIP* scip)
+    SCIP_Longint SCIPgetMemTotal(SCIP* scip)
+    SCIP_Longint SCIPgetMemExternEstim(SCIP* scip)
 
 cdef extern from "scip/scip_expr.h":
     SCIP_RETCODE SCIPcreateExpr(SCIP* scip,
@@ -2107,8 +2129,13 @@ cdef extern from "scip/scip_var.h":
 cdef extern from "tpi/tpi.h":
     int SCIPtpiGetNumThreads()
 
-cdef class Expr:
+cdef class ExprLike:
+    pass
+
+cdef class Expr(ExprLike):
     cdef public terms
+
+    cpdef double _evaluate(self, Solution sol)
 
 cdef class Event:
     cdef SCIP_EVENT* event
@@ -2222,12 +2249,24 @@ cdef class Model:
     cdef SCIP_Bool _freescip
     # map to store python variables
     cdef _modelvars
+    # map to store python constraints
+    cdef _modelconss
     # used to keep track of the number of event handlers generated
     cdef int _generated_event_handlers_count
     # store references to Benders subproblem Models for proper cleanup
     cdef _benders_subproblems
+    # Strong references to every included plugin. Each plugin in turn holds a
+    # strong reference to the Model via `self.model`, so both stay alive until
+    # SCIP teardown callbacks (consfree, eventexit, ...) have finished running.
+    # The resulting cycle is broken by `Model.__del__` or by `Model.free()`.
+    # See `Model.free` for the full lifecycle policy.
+    cdef _plugins
     # store iis, if found
     cdef SCIP_IIS* _iis
+    # helper methods for later var and cons cleanup
+    cdef _getOrCreateCons(self, SCIP_CONS* scip_cons)
+    cdef _getOrCreateVar(self, SCIP_VAR* scip_var)
+    cdef _free_scip_instance(self)
 
     @staticmethod
     cdef create(SCIP* scip)

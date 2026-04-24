@@ -4,7 +4,7 @@ from ._version import __version__
 import os
 if hasattr(os, 'add_dll_directory'):
     if os.getenv('SCIPOPTDIR'):
-        os.add_dll_directory(os.path.join(os.getenv('SCIPOPTDIR').strip('"'), 'bin'))
+        os.add_dll_directory(os.path.join(os.environ['SCIPOPTDIR'].strip('"'), 'bin'))
 
 # export user-relevant objects:
 from pyscipopt.Multidict import multidict as multidict
@@ -28,6 +28,7 @@ from pyscipopt.scip      import Sepa as Sepa
 from pyscipopt.scip      import LP as LP
 from pyscipopt.scip      import IISfinder as IISfinder 
 from pyscipopt.scip      import PY_SCIP_LPPARAM as SCIP_LPPARAM
+from pyscipopt.scip      import PY_SCIP_BASESTAT as SCIP_BASESTAT
 from pyscipopt.scip      import readStatistics as readStatistics
 from pyscipopt.scip      import Expr as Expr
 from pyscipopt.scip      import MatrixExpr as MatrixExpr
