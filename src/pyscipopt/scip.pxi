@@ -379,7 +379,8 @@ cdef class Event:
         """
         if scip_event == NULL:
             raise Warning("cannot create Event with SCIP_EVENT* == NULL")
-        event = Event()
+
+        cdef Event event = Event.__new__()
         event.event = scip_event
         return event
 
@@ -490,13 +491,13 @@ cdef class Column:
     """Base class holding a pointer to corresponding SCIP_COL."""
 
     @staticmethod
-    cdef create(SCIP_COL* scipcol):
+    cdef create(SCIP_COL* scip_col):
         """
         Main method for creating a Column class. Is used instead of __init__.
 
         Parameters
         ----------
-        scipcol : SCIP_COL*
+        scip_col : SCIP_COL*
             A pointer to the SCIP_COL
 
         Returns
@@ -507,7 +508,8 @@ cdef class Column:
         """
         if scipcol == NULL:
             raise Warning("cannot create Column with SCIP_COL* == NULL")
-        col = Column()
+
+        cdef Column col = Column.__new__(Column)
         col.scip_col = scipcol
         return col
 
@@ -660,7 +662,8 @@ cdef class ColumnExact:
         """
         if scipcolexact == NULL:
             raise Warning("cannot create ColumnExact with SCIP_COLEXACT* == NULL")
-        col = ColumnExact()
+
+        cdef ColumnExact col = ColumnExact.__new__(ColumnExact)
         col.scip_col_exact = scipcolexact
         return col
 
@@ -685,7 +688,8 @@ cdef class Row:
         """
         if sciprow == NULL:
             raise Warning("cannot create Row with SCIP_ROW* == NULL")
-        row = Row()
+
+        cdef Row row = Row.__new__(Row)
         row.scip_row = sciprow
         return row
 
@@ -969,7 +973,8 @@ cdef class RowExact:
         """
         if sciprowexact == NULL:
             raise Warning("cannot create Row with SCIP_ROWEXACT* == NULL")
-        row_exact = RowExact()
+
+        cdef RowExact row_exact = RowExact.__new__(RowExact)
         row_exact.scip_row_exact = sciprowexact
         return row_exact
 
@@ -994,7 +999,8 @@ cdef class NLRow:
         """
         if scipnlrow == NULL:
             raise Warning("cannot create NLRow with SCIP_NLROW* == NULL")
-        nlrow = NLRow()
+
+        cdef NLRow nlrow = NLRow.__new__(NLRow)
         nlrow.scip_nlrow = scipnlrow
         return nlrow
 
@@ -1073,9 +1079,8 @@ cdef class Solution:
     """Base class holding a pointer to corresponding SCIP_SOL."""
 
     # We are raising an error here to avoid creating a solution without an associated model. See Issue #625
-    def __init__(self, raise_error = True):
-        if raise_error:
-            raise ValueError("To create a solution you should use the createSol method of the Model class.")
+    def __init__(self):
+        raise ValueError("To create a solution you should use the createSol method of the Model class.")
 
     @staticmethod
     cdef create(SCIP* scip, SCIP_SOL* scip_sol):
@@ -1098,7 +1103,8 @@ cdef class Solution:
         """
         if scip == NULL:
             raise Warning("cannot create Solution with SCIP* == NULL")
-        sol = Solution(raise_error=False)
+
+        cdef Solution sol = Solution.__new__(Solution)
         sol.sol = scip_sol
         sol.scip = scip
         return sol
@@ -1192,7 +1198,8 @@ cdef class BoundChange:
         """
         if scip_boundchg == NULL:
             raise Warning("cannot create BoundChange with SCIP_BOUNDCHG* == NULL")
-        boundchg = BoundChange()
+
+        cdef BoundChange boundchg = BoundChange.__new__(BoundChange)
         boundchg.scip_boundchg = scip_boundchg
         return boundchg
 
@@ -1279,7 +1286,8 @@ cdef class DomainChanges:
         """
         if scip_domchg == NULL:
             raise Warning("cannot create DomainChanges with SCIP_DOMCHG* == NULL")
-        domchg = DomainChanges()
+
+        cdef DomainChanges domchg = DomainChanges__new__(DomainChanges)
         domchg.scip_domchg = scip_domchg
         return domchg
 
@@ -1318,7 +1326,8 @@ cdef class Node:
         """
         if scipnode == NULL:
             return None
-        node = Node()
+
+        cdef Node node = Node.__new__(Node)
         node.scip_node = scipnode
         return node
 
@@ -1534,7 +1543,7 @@ cdef class Variable(Expr):
     """Is a linear expression and has SCIP_VAR*"""
 
     @staticmethod
-    cdef create(SCIP_VAR* scipvar):
+    cdef create(SCIP_VAR* scip_var):
         """
         Main method for creating a Variable class. Is used instead of __init__.
 
@@ -1551,8 +1560,9 @@ cdef class Variable(Expr):
         """
         if scipvar == NULL:
             raise Warning("cannot create Variable with SCIP_VAR* == NULL")
-        var = Variable()
-        var.scip_var = scipvar
+
+        cdef Variable var = Variable.__new__(Variable)
+        var.scip_var = scip_var
         Expr.__init__(var, {Term(var) : 1.0})
         return var
 
@@ -2194,13 +2204,13 @@ cdef class Constraint:
     """Base class holding a pointer to corresponding SCIP_CONS"""
 
     @staticmethod
-    cdef create(SCIP_CONS* scipcons):
+    cdef create(SCIP_CONS* scip_cons):
         """
         Main method for creating a Constraint class. Is used instead of __init__.
 
         Parameters
         ----------
-        scipcons : SCIP_CONS*
+        scip_cons : SCIP_CONS*
             A pointer to the SCIP_CONS
 
         Returns
@@ -2211,8 +2221,9 @@ cdef class Constraint:
         """
         if scipcons == NULL:
             raise Warning("cannot create Constraint with SCIP_CONS* == NULL")
-        cons = Constraint()
-        cons.scip_cons = scipcons
+
+        cdef Constraint cons = Constraint.__new__(Constraint)
+        cons.scip_cons = scip_cons
         return cons
 
     property name:
