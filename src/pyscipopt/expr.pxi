@@ -445,8 +445,12 @@ cdef class Expr(ExprLike):
     def __repr__(self):
         return 'Expr(%s)' % repr(self.terms)
 
-    def degree(self, /) -> float:
-        return max((i.degree() for i in self)) if self else 0
+    def degree(self, /) -> int:
+        '''computes highest degree of terms'''
+        if len(self.terms) == 0:
+            return 0
+        else:
+            return max(len(v) for v in self.terms)
 
     cpdef double _evaluate(self, Solution sol) except *:
         cdef double res = 0
