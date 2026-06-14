@@ -360,7 +360,7 @@ cdef class Expr(ExprLike):
 
         return Expr(_to_dict(self, other, copy=True))
 
-    def __iadd__(self, other):
+    def __iadd__(self, other, /):
         if not _is_expr_compatible(other):
             return NotImplemented
 
@@ -371,7 +371,7 @@ cdef class Expr(ExprLike):
 
         return self
 
-    def __mul__(self, other):
+    def __mul__(self, other, /):
         if not _is_expr_compatible(other):
             return NotImplemented
 
@@ -402,7 +402,7 @@ cdef class Expr(ExprLike):
                         res[child] = coef
         return Expr(res)
 
-    def __truediv__(self, other):
+    def __truediv__(self, other, /):
         if not _is_expr_compatible(other):
             return NotImplemented
 
@@ -415,7 +415,7 @@ cdef class Expr(ExprLike):
             return NotImplemented
         return super().__rtruediv__(other)
 
-    def __pow__(self, other):
+    def __pow__(self, other, /):
         if float(other).is_integer() and other >= 0:
             exp = int(other)
         else: # need to transform to GenExpr
@@ -426,7 +426,7 @@ cdef class Expr(ExprLike):
             res *= self
         return res
 
-    def __rpow__(self, other):
+    def __rpow__(self, other, /):
         """
         Implements base**x as scip.exp(x * scip.log(base)).
         Note: base must be positive.
@@ -577,7 +577,7 @@ cdef class GenExpr(ExprLike):
     cdef GenExpr _as_expr(self):
         return self
 
-    def __add__(self, other):
+    def __add__(self, other, /):
         if not _is_genexpr_compatible(other):
             return NotImplemented
 
@@ -635,7 +635,7 @@ cdef class GenExpr(ExprLike):
     #        self.children.append(right)
     #    return self
 
-    def __mul__(self, other):
+    def __mul__(self, other, /):
         if not _is_genexpr_compatible(other):
             return NotImplemented
 
@@ -685,7 +685,7 @@ cdef class GenExpr(ExprLike):
     #        self.children.append(right)
     #    return self
 
-    def __pow__(self, other):
+    def __pow__(self, other, /):
         expo = buildGenExprObj(other)
         if expo.getOp() != Operator.const:
             raise NotImplementedError("exponents must be numbers")
@@ -697,7 +697,7 @@ cdef class GenExpr(ExprLike):
 
         return ans
 
-    def __rpow__(self, other):
+    def __rpow__(self, other, /):
         """
         Implements base**x as scip.exp(x * scip.log(base)). 
         Note: base must be positive.
@@ -710,7 +710,7 @@ cdef class GenExpr(ExprLike):
         return (self * Constant(base).log()).exp()
 
     #TODO: ipow, idiv, etc
-    def __truediv__(self,other):
+    def __truediv__(self,other, /):
         if not _is_genexpr_compatible(other):
             return NotImplemented
 
