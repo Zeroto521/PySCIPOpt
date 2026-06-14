@@ -167,12 +167,12 @@ def buildGenExprObj(expr: Union[int, float, np.number, Expr, GenExpr]) -> GenExp
     if _is_number(expr):
         return Constant(expr)
 
-    elif isinstance(expr, Expr):
+    elif isinstance(expr, (Variable, Expr)):
         # loop over terms and create a sumexpr with the sum of each term
         # each term is either a variable (which gets transformed into varexpr)
         # or a product of variables (which gets tranformed into a prod)
         sumexpr = SumExpr()
-        for vars, coef in expr.terms.items():
+        for vars, coef in expr.as_expr().terms.items():
             if len(vars) == 0:
                 sumexpr += coef
             elif len(vars) == 1:
@@ -329,9 +329,7 @@ cdef class ExprLike:
         self.as_expr().normalize()
 
     cpdef double _evaluate(self, Solution sol) except *:
-        raise NotImplementedError(
-            f"{self.__class__.__name__!s} need to implement _evaluate() method"
-        )
+        return self.as_expr()._evaluate(sol)
 
 
 ##@details Polynomial expressions of variables with operator overloading. \n
@@ -396,10 +394,10 @@ cdef class Expr(ExprLike):
             while PyDict_Next(self.terms, &pos1, &k1_ptr, &v1_ptr):
                 res[<Term>k1_ptr] = <double>(<object>v1_ptr) * coef
 
-        elif isinstance(other, Expr):
+        elif isinstance(other, (Variable, Expr)):
             while PyDict_Next(self.terms, &pos1, &k1_ptr, &v1_ptr):
                 pos2 = <Py_ssize_t>0
-                while PyDict_Next(other.terms, &pos2, &k2_ptr, &v2_ptr):
+                while PyDict_Next(other.as_expr().terms, &pos2, &k2_ptr, &v2_ptr):
                     child = (<Term>k1_ptr) * (<Term>k2_ptr)
                     coef = (<double>(<object>v1_ptr)) * (<double>(<object>v2_ptr))
                     if (old_v_ptr := PyDict_GetItem(res, child)) != NULL:
@@ -491,7 +489,7 @@ cdef class ExprCons:
 
     cdef void normalize(self):
         '''move constant terms in expression to bounds'''
-        if isinstance(self.expr, Expr):
+        if isinstance(self.expr, (Variable, Expr)):
             c = self.expr[CONST]
             self.expr -= c
             assert self.expr[CONST] == 0.0
@@ -1036,11 +1034,15 @@ cdef inline object _wrap_ufunc(object x, object ufunc):
 cdef inline object _ensure_matrix(object arg):
     if type(arg) is np.ndarray:
         return arg.view(MatrixExpr)
-    matrix = MatrixExpr if isinstance(arg, Expr) else MatrixGenExpr
+    matrix = MatrixExpr if isinstance(arg, (Variable, Expr)) else MatrixGenExpr
     return np.array(arg, dtype=object).view(matrix)
 
-cdef dict _to_dict(Expr expr, Expr other, bool copy = True):
-    cdef dict children = expr.terms.copy() if copy else expr.terms
+cdef dict _to_dict(
+    expr: Union[Variable, Expr],
+    other: Union[Variable, Expr],
+    bool copy = True,
+):
+    cdef dict children = expr.as_expr().terms.copy() if copy else expr.as_expr().terms
     cdef Py_ssize_t pos = <Py_ssize_t>0
     cdef PyObject* k_ptr = NULL
     cdef PyObject* v_ptr = NULL
@@ -1048,7 +1050,7 @@ cdef dict _to_dict(Expr expr, Expr other, bool copy = True):
     cdef double other_v
     cdef object k_obj
 
-    while PyDict_Next(other.terms, &pos, &k_ptr, &v_ptr):
+    while PyDict_Next(other.as_expr().terms, &pos, &k_ptr, &v_ptr):
         other_v = <double>(<object>v_ptr)
         k_obj = <object>k_ptr
         old_v_ptr = PyDict_GetItem(children, k_obj)
@@ -1109,14 +1111,14 @@ cdef inline bint _is_number(object x):
     return PyNumber_Check(x)
 
 cdef inline bint _is_expr_compatible(object x):
-    return _is_number(x) or isinstance(x, Expr)
+    return _is_number(x) or isinstance(x, (Variable, Expr))
 
 cdef inline bint _is_genexpr_compatible(object x):
     return _is_expr_compatible(x) or isinstance(x, GenExpr)
 
 cdef object _expr_richcmp(
     ExprLike self,
-    other: Union[int, float, np.number, Expr, GenExpr],
+    other: Union[int, float, np.number, Variable, Expr, GenExpr],
     int op,
 ):
     if isinstance(other, np.ndarray):
