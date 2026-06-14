@@ -314,14 +314,17 @@ cdef class ExprLike:
     def degree(self, /) -> float:
         return self._as_expr().degree()
 
-    cpdef double _evaluate(self, Solution sol) except *:
-        raise NotImplementedError(
-            f"{self.__class__.__name__!s} need to implement _evaluate() method"
-        )
-
     cdef ExprLike _as_expr(self):
         raise NotImplementedError(
             f"{self.__class__.__name__!s} need to implement _as_expr() method"
+        )
+
+    cdef void normalize(self):
+        self._as_expr().normalize()
+
+    cpdef double _evaluate(self, Solution sol) except *:
+        raise NotImplementedError(
+            f"{self.__class__.__name__!s} need to implement _evaluate() method"
         )
 
 
@@ -438,10 +441,6 @@ cdef class Expr(ExprLike):
             raise ValueError("Base of a**x must be positive, as expression is reformulated to scip.exp(x * scip.log(a)); got %g" % base)
         return (self * Constant(base).log()).exp()
 
-    def normalize(self):
-        '''remove terms with coefficient of 0'''
-        self.terms =  {t:c for (t,c) in self.terms.items() if c != 0.0}
-
     def __repr__(self):
         return 'Expr(%s)' % repr(self.terms)
 
@@ -451,6 +450,10 @@ cdef class Expr(ExprLike):
             return 0
         else:
             return max(len(v) for v in self.terms)
+
+    cdef void normalize(self):
+        '''remove terms with coefficient of 0'''
+        self.terms =  {t:c for (t,c) in self.terms.items() if c != 0.0}
 
     cpdef double _evaluate(self, Solution sol) except *:
         cdef double res = 0
@@ -480,7 +483,7 @@ cdef class ExprCons:
         assert not (lhs is None and rhs is None)
         self.normalize()
 
-    def normalize(self):
+    cdef void normalize(self):
         '''move constant terms in expression to bounds'''
         if isinstance(self.expr, Expr):
             c = self.expr[CONST]
@@ -750,6 +753,9 @@ cdef class GenExpr(ExprLike):
         elif cls is PowExpr:
             (<PowExpr>res).expo = (<PowExpr>self).expo
         return res
+
+    cdef void normalize(self):
+        ...
 
 
 # Sum Expressions
