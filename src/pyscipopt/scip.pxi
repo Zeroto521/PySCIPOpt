@@ -1530,17 +1530,22 @@ cdef class Node:
         return (self.__class__ == other.__class__
                 and self.scip_node == (<Node>other).scip_node)
 
-cdef class Variable(Expr):
-    """Is a linear expression and has SCIP_VAR*"""
+cdef class Variable(ExprLike):
+
+    def __init__(self, *_):
+        raise NotImplementedError(
+            "Direct instantiation of 'Variable' is not supported. "
+            "Please use Model to create variables."
+        )
 
     @staticmethod
-    cdef create(SCIP_VAR* scipvar):
+    cdef create(SCIP_VAR* scip_var):
         """
         Main method for creating a Variable class. Is used instead of __init__.
 
         Parameters
         ----------
-        scipvar : SCIP_VAR*
+        scip_var : SCIP_VAR*
             A pointer to the SCIP_VAR
 
         Returns
@@ -1549,11 +1554,12 @@ cdef class Variable(Expr):
             The Python representative of the SCIP_VAR
 
         """
-        if scipvar == NULL:
+        if scip_var == NULL:
             raise Warning("cannot create Variable with SCIP_VAR* == NULL")
-        var = Variable()
-        var.scip_var = scipvar
-        Expr.__init__(var, {Term(var) : 1.0})
+
+        cdef Variable var = Variable.__new__(Variable)
+        var.scip_var = scip_var
+        var._expr_view = Expr({Term(var): 1.0})
         return var
 
     property name:
@@ -1568,6 +1574,9 @@ cdef class Variable(Expr):
 
     def __repr__(self):
         return self.name
+
+    cdef Variable _as_expr(self):
+        return self._expr_view
 
     def vtype(self):
         """

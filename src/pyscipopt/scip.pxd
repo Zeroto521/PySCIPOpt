@@ -2151,12 +2151,12 @@ cdef extern from "tpi/tpi.h":
     int SCIPtpiGetNumThreads()
 
 cdef class ExprLike:
-    pass
+
+    cdef ExprLike _as_expr(self)
+    cpdef double _evaluate(self, Solution sol)
 
 cdef class Expr(ExprLike):
     cdef public terms
-
-    cpdef double _evaluate(self, Solution sol)
 
 cdef class Event:
     cdef SCIP_EVENT* event

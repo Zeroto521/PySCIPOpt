@@ -257,44 +257,72 @@ cdef class ExprLike:
 
         return NotImplemented
 
+    def __add__(self, other, /):
+        return self._as_expr() + other
+
     def __radd__(self, other, /):
-        return self + other
+        return self._as_expr() + other
 
     def __sub__(self, other, /):
-        return self + (-other)
+        return self._as_expr() + (-other)
 
     def __rsub__(self, other, /):
-        return (-self) + other
+        return (-self._as_expr()) + other
+
+    def __mul__(self, other, /):
+        return self._as_expr() * other
 
     def __rmul__(self, other, /):
-        return self * other
+        return self._as_expr() * other
+
+    def __truediv__(self, other, /):
+        return self._as_expr() / other
 
     def __rtruediv__(self, other, /) -> GenExpr:
-        return buildGenExprObj(other) / self
+        return buildGenExprObj(other) / self._as_expr()
+
+    def __pow__(self, other, /):
+        return self._as_expr() ** other
+
+    def __rpow__(self, other, /):
+        return other ** self._as_expr()
 
     def __richcmp__(self, other, int op):
-        return _expr_richcmp(self, other, op)
+        return _expr_richcmp(self._as_expr(), other, op)
 
     def __neg__(self, /) -> Union[Expr, GenExpr]:
-        return self * -1.0
+        return self._as_expr() * -1.0
 
-    def __abs__(self) -> GenExpr:
-        return UnaryExpr(Operator.fabs, buildGenExprObj(self))
+    def __abs__(self, /) -> GenExpr:
+        return UnaryExpr(Operator.fabs, buildGenExprObj(self._as_expr()))
 
-    def exp(self) -> GenExpr:
-        return UnaryExpr(Operator.exp, buildGenExprObj(self))
+    def exp(self, /) -> GenExpr:
+        return UnaryExpr(Operator.exp, buildGenExprObj(self._as_expr()))
 
-    def log(self) -> GenExpr:
-        return UnaryExpr(Operator.log, buildGenExprObj(self))
+    def log(self, /) -> GenExpr:
+        return UnaryExpr(Operator.log, buildGenExprObj(self._as_expr()))
 
-    def sqrt(self) -> GenExpr:
-        return UnaryExpr(Operator.sqrt, buildGenExprObj(self))
+    def sqrt(self, /) -> GenExpr:
+        return UnaryExpr(Operator.sqrt, buildGenExprObj(self._as_expr()))
 
-    def sin(self) -> GenExpr:
-        return UnaryExpr(Operator.sin, buildGenExprObj(self))
+    def sin(self, /) -> GenExpr:
+        return UnaryExpr(Operator.sin, buildGenExprObj(self._as_expr()))
 
-    def cos(self) -> GenExpr:
-        return UnaryExpr(Operator.cos, buildGenExprObj(self))
+    def cos(self, /) -> GenExpr:
+        return UnaryExpr(Operator.cos, buildGenExprObj(self._as_expr()))
+
+    def degree(self, /) -> float:
+        return self._as_expr().degree()
+
+    cpdef double _evaluate(self, Solution sol) except *:
+        raise NotImplementedError(
+            f"{self.__class__.__name__!s} need to implement _evaluate() method"
+        )
+
+    cdef ExprLike _as_expr(self):
+        raise NotImplementedError(
+            f"{self.__class__.__name__!s} need to implement _as_expr() method"
+        )
 
 
 ##@details Polynomial expressions of variables with operator overloading. \n
@@ -310,6 +338,9 @@ cdef class Expr(ExprLike):
         if len(self.terms) == 0:
             self.terms[CONST] = 0.0
 
+    cdef Expr _as_expr(self):
+        return self
+
     def __getitem__(self, key):
         if not isinstance(key, Term):
             key = Term(key)
@@ -318,7 +349,7 @@ cdef class Expr(ExprLike):
     def __iter__(self):
         return iter(self.terms)
 
-    def __add__(self, other):
+    def __add__(self, other, /):
         if not _is_expr_compatible(other):
             return NotImplemented
 
@@ -384,7 +415,7 @@ cdef class Expr(ExprLike):
             return NotImplemented
         return super().__rtruediv__(other)
 
-    def __pow__(self, other, modulo):
+    def __pow__(self, other):
         if float(other).is_integer() and other >= 0:
             exp = int(other)
         else: # need to transform to GenExpr
@@ -414,12 +445,8 @@ cdef class Expr(ExprLike):
     def __repr__(self):
         return 'Expr(%s)' % repr(self.terms)
 
-    def degree(self):
-        '''computes highest degree of terms'''
-        if len(self.terms) == 0:
-            return 0
-        else:
-            return max(len(v) for v in self.terms)
+    def degree(self, /) -> float:
+        return max((i.degree() for i in self)) if self else 0
 
     cpdef double _evaluate(self, Solution sol) except *:
         cdef double res = 0
@@ -547,6 +574,9 @@ cdef class GenExpr(ExprLike):
     def __init__(self): # do we need it
         ''' '''
 
+    cdef GenExpr _as_expr(self):
+        return self
+
     def __add__(self, other):
         if not _is_genexpr_compatible(other):
             return NotImplemented
@@ -655,7 +685,7 @@ cdef class GenExpr(ExprLike):
     #        self.children.append(right)
     #    return self
 
-    def __pow__(self, other, modulo):
+    def __pow__(self, other):
         expo = buildGenExprObj(other)
         if expo.getOp() != Operator.const:
             raise NotImplementedError("exponents must be numbers")
@@ -695,7 +725,7 @@ cdef class GenExpr(ExprLike):
             return NotImplemented
         return super().__rtruediv__(other)
 
-    def degree(self):
+    def degree(self, /) -> float:
         '''Note: none of these expressions should be polynomial'''
         return float('inf') 
 
