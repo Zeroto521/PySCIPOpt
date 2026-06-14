@@ -200,7 +200,7 @@ cdef class ExprLike:
     ):
         if kwargs.get("out", None) is not None:
             raise TypeError(
-                f"{self.__class__.__name__} doesn't support the 'out' parameter in __array_ufunc__"
+                f"{self.__class__.__name__!s} doesn't support the 'out' parameter in __array_ufunc__"
             )
 
         if method == "__call__":
