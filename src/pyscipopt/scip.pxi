@@ -1575,7 +1575,7 @@ cdef class Variable(ExprLike):
     def __repr__(self):
         return self.name
 
-    cdef Variable _as_expr(self):
+    cdef Variable as_expr(self):
         return self._expr_view
 
     def vtype(self):

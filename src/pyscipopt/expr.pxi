@@ -258,69 +258,69 @@ cdef class ExprLike:
         return NotImplemented
 
     def __add__(self, other, /):
-        return self._as_expr() + other
+        return self.as_expr() + other
 
     def __radd__(self, other, /):
-        return self._as_expr() + other
+        return self.as_expr() + other
 
     def __sub__(self, other, /):
-        return self._as_expr() + (-other)
+        return self.as_expr() + (-other)
 
     def __rsub__(self, other, /):
-        return (-self._as_expr()) + other
+        return (-self.as_expr()) + other
 
     def __mul__(self, other, /):
-        return self._as_expr() * other
+        return self.as_expr() * other
 
     def __rmul__(self, other, /):
-        return self._as_expr() * other
+        return self.as_expr() * other
 
     def __truediv__(self, other, /):
-        return self._as_expr() / other
+        return self.as_expr() / other
 
     def __rtruediv__(self, other, /) -> GenExpr:
-        return buildGenExprObj(other) / self._as_expr()
+        return buildGenExprObj(other) / self.as_expr()
 
     def __pow__(self, other, /):
-        return self._as_expr() ** other
+        return self.as_expr() ** other
 
     def __rpow__(self, other, /):
-        return other ** self._as_expr()
+        return other ** self.as_expr()
 
     def __richcmp__(self, other, int op):
-        return _expr_richcmp(self._as_expr(), other, op)
+        return _expr_richcmp(self.as_expr(), other, op)
 
     def __neg__(self, /) -> Union[Expr, GenExpr]:
-        return self._as_expr() * -1.0
+        return self.as_expr() * -1.0
 
     def __abs__(self, /) -> GenExpr:
-        return UnaryExpr(Operator.fabs, buildGenExprObj(self._as_expr()))
+        return UnaryExpr(Operator.fabs, buildGenExprObj(self.as_expr()))
 
     def exp(self, /) -> GenExpr:
-        return UnaryExpr(Operator.exp, buildGenExprObj(self._as_expr()))
+        return UnaryExpr(Operator.exp, buildGenExprObj(self.as_expr()))
 
     def log(self, /) -> GenExpr:
-        return UnaryExpr(Operator.log, buildGenExprObj(self._as_expr()))
+        return UnaryExpr(Operator.log, buildGenExprObj(self.as_expr()))
 
     def sqrt(self, /) -> GenExpr:
-        return UnaryExpr(Operator.sqrt, buildGenExprObj(self._as_expr()))
+        return UnaryExpr(Operator.sqrt, buildGenExprObj(self.as_expr()))
 
     def sin(self, /) -> GenExpr:
-        return UnaryExpr(Operator.sin, buildGenExprObj(self._as_expr()))
+        return UnaryExpr(Operator.sin, buildGenExprObj(self.as_expr()))
 
     def cos(self, /) -> GenExpr:
-        return UnaryExpr(Operator.cos, buildGenExprObj(self._as_expr()))
+        return UnaryExpr(Operator.cos, buildGenExprObj(self.as_expr()))
 
     def degree(self, /) -> float:
-        return self._as_expr().degree()
+        return self.as_expr().degree()
 
-    cdef ExprLike _as_expr(self):
+    cdef ExprLike as_expr(self):
         raise NotImplementedError(
-            f"{self.__class__.__name__!s} need to implement _as_expr() method"
+            f"{self.__class__.__name__!s} need to implement as_expr() method"
         )
 
     cdef void normalize(self):
-        self._as_expr().normalize()
+        self.as_expr().normalize()
 
     cpdef double _evaluate(self, Solution sol) except *:
         raise NotImplementedError(
@@ -341,7 +341,7 @@ cdef class Expr(ExprLike):
         if len(self.terms) == 0:
             self.terms[CONST] = 0.0
 
-    cdef Expr _as_expr(self):
+    cdef Expr as_expr(self):
         return self
 
     def __getitem__(self, key):
@@ -581,7 +581,7 @@ cdef class GenExpr(ExprLike):
     def __init__(self): # do we need it
         ''' '''
 
-    cdef GenExpr _as_expr(self):
+    cdef GenExpr as_expr(self):
         return self
 
     def __add__(self, other, /):
