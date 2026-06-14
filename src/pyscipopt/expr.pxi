@@ -243,7 +243,7 @@ cdef class ExprLike:
             elif ufunc is np.equal:
                 return args[0] == args[1]
             elif ufunc is np.absolute:
-                return args[0].__abs__()
+                return abs(args[0])
             elif ufunc is np.exp:
                 return args[0].exp()
             elif ufunc is np.log:
@@ -256,6 +256,12 @@ cdef class ExprLike:
                 return args[0].cos()
 
         return NotImplemented
+
+    def __getitem__(self, key):
+        return self.as_expr()[key]
+
+    def __iter__(self):
+        return iter(self.as_expr())
 
     def __add__(self, other, /):
         return self.as_expr() + other
@@ -340,9 +346,6 @@ cdef class Expr(ExprLike):
 
         if len(self.terms) == 0:
             self.terms[CONST] = 0.0
-
-    cdef Expr as_expr(self):
-        return self
 
     def __getitem__(self, key):
         if not isinstance(key, Term):
@@ -450,6 +453,9 @@ cdef class Expr(ExprLike):
             return 0
         else:
             return max(len(v) for v in self.terms)
+
+    cdef Expr as_expr(self):
+        return self
 
     cdef void normalize(self):
         '''remove terms with coefficient of 0'''
@@ -580,9 +586,6 @@ cdef class GenExpr(ExprLike):
 
     def __init__(self): # do we need it
         ''' '''
-
-    cdef GenExpr as_expr(self):
-        return self
 
     def __add__(self, other, /):
         if not _is_genexpr_compatible(other):
@@ -740,6 +743,12 @@ cdef class GenExpr(ExprLike):
         '''returns operator of GenExpr'''
         return self._op
 
+    cdef GenExpr as_expr(self):
+        return self
+
+    cdef void normalize(self):
+        ...
+
     cdef GenExpr copy(self, bool copy = True):
         cdef object cls = <type>Py_TYPE(self)
         cdef GenExpr res = cls.__new__(cls)
@@ -753,9 +762,6 @@ cdef class GenExpr(ExprLike):
         elif cls is PowExpr:
             (<PowExpr>res).expo = (<PowExpr>self).expo
         return res
-
-    cdef void normalize(self):
-        ...
 
 
 # Sum Expressions
