@@ -11,6 +11,8 @@
 - Speed up `Expr.__add__` and `Expr.__iadd__` via the C-level API
 - Replace Python math with C-level math functions and refactor unary expressions.
 ### Removed
+- Deprecated `getOp` method in `GenExpr`
+- Deprecated inner enumerate class `Operator`
 
 ## 6.2.1 - 2026.05.16
 ### Fixed
