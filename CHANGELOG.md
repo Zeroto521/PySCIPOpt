@@ -2,15 +2,50 @@
 
 ## Unreleased
 ### Added
-- `Expr` and `GenExpr` support NumPy unary functions (`np.sin`, `np.cos`, `np.sqrt`, `np.exp`, `np.log`, `np.absolute`)
+- Added the following methods with tests: `getNNodesLeft()`, `getNRuns()`, `getNReoptRuns()`, `addNNodes()`, `getDeterministicTime()`, `getAvgDualbound()`, `getMaxTotalDepth()`, `getNBacktracks()`,\
+`getFocusNode()`, `getAvgLowerbound()`, `getFirstPrimalBound()`, `getLowerboundRoot()`, `getUpperbound()`, `getNObjlimLeaves()`
+- Added `addConsCumulative()` for SCIP cumulative constraints (#1222)
+- Added `addConsLogicor()`, `addCoefLogicor()`, `getNVarsLogicor()`, `getVarsLogicor()`, `getDualsolLogicor()` and `getDualfarkasLogicor()` for SCIP logicor constraints (#977)
+- `Expr` and `GenExpr` support `__pos__` magic method like `+Expr` or `+GenExpr`
+- Added type annotations to most methods on the `Model` class
+- Added tests for `getRowLinear()` and extended existing testing for `isActive()`
+### Fixed
+- Fixed Cython 3.3 compatibility (#1248)
+- Made `test_markDoNotAggrVar_and_getStatus` robust to SCIP presolve changes by discovering the aggregated/multi-aggregated variables instead of hardcoding them
+### Changed
+- Move magic methods (`__radd__`, `__sub__`, `__rsub__`, `__rmul__`, `__richcmp__`, `__neg__`, and `__rtruediv__`) to `ExprLike` base class (#1204)
+- Speed up `Expr.__add__` and `Expr.__iadd__` via the C-level API (#1205)
+- Replace Python math with C-level math functions and refactor unary expressions (#1224)
+- Speed up `ProdExpr.__neg__` and `Constant.__neg__` via C-level API (#1250)
+- Extended `structured_optimization_trace` recipe to support context-managed JSONL tracing with final `run_end` records, alongside the existing attach-style in-memory tracing.
+- Integration tests now run in the merge queue before merging instead of after pushing to `master` (#1249)
+### Removed
+- `SumExpr`.coefs has been removed; its values were always 1.0 (#1258)
+
+## 6.2.1 - 2026.05.16
+### Fixed
+- Fixed `AttributeError` when comparing NumPy scalars (e.g. `np.float64`) or 0-dim NumPy arrays against `Expr`/`Variable` on NumPy 2.x (#1218)
+
+## 6.2.0 - 2026.05.11
+### Added
+- Added `solveProbingLPWithPricing()` and test
+- `Expr` and `GenExpr` support NumPy unary functions (`np.sin`, `np.cos`, `np.sqrt`, `np.exp`, `np.log`, `np.absolute`, `np.negative`)
+- `Expr` and `GenExpr` support NumPy binary functions (`np.add`, `np.subtract`, `np.multiply`, `np.divide`, `np.true_divide`, `np.power`, `np.less_equal`, `np.greater_equal`, `np.equal`)
 - Added `getBase()` and `setBase()` methods to `LP` class for getting/setting basis status
 - Added `getMemUsed()`, `getMemTotal()`, and `getMemExternEstim()` methods
+- Added `addMatrixConsDisjunction()` for elementwise disjunctions over matrix constraint expressions (`MatrixExprCons`/`ExprCons`) (#1084)
+- Added `isReoptEnabled()` and raising error if not enabled upon calling `reoptSolve()`
+- SOS1/SOS2 constraints are now realease after addition similar to the other constraint types
 ### Fixed
 - Removed `Py_INCREF`/`Py_DECREF` on `Model` in `catchEvent`/`dropEvent` that caused memory leak for imbalanced usage
 - Used `getIndex()` instead of `ptr()` for sorting nonlinear expression terms to avoid nondeterministic behavior
 - Fixed stubtest failures with mypy 1.20 by marking dunder method parameters as positional-only
 - Return `MatrixGenExpr` in `buildGenExprObj` instead of `MatrixExpr`
+- Plugins now hold strong references to their `Model` instead of `weakref.proxy`, fixing `ReferenceError` during cleanup callbacks
+- Made `test_tree` robust to SCIP solver improvements by asserting visited node depths instead of node count
+- Lower macOS wheel `MACOSX_DEPLOYMENT_TARGET` to 11.0 and patch bundled SCIP/SoPlex/GCG and GCC runtime dylibs to match
 ### Changed
+- Return NotImplemented for `Expr` and `GenExpr` operators if they can't handle input types in the calculation
 - Speed up `constant * Expr` via C-level API
 - Speed up `Term.__eq__` via the C-level API
 - `abs(Constant)` returns `Constant` instead of `GenExpr`
