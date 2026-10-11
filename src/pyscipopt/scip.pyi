@@ -10,8 +10,8 @@ CONST: Term
 EventNames: dict
 MAJOR: int
 MINOR: int
-PATCH: int
 Operator: Op
+PATCH: int
 PY_SCIP_CALL: Incomplete
 StageNames: dict
 TYPE_CHECKING: bool
@@ -20,11 +20,6 @@ _core_dot: Incomplete
 _core_dot_2d: Incomplete
 _core_sum: Incomplete
 buildGenExprObj: Incomplete
-exp: Incomplete
-log: Incomplete
-sin: Incomplete
-cos: Incomplete
-sqrt: Incomplete
 expr_to_array: Incomplete
 expr_to_nodes: Incomplete
 is_memory_freed: Incomplete
