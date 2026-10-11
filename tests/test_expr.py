@@ -658,6 +658,88 @@ def test_constant_unary_domain_errors():
         sqrt(-1.0)
 
 
+def test_constant_add():
+    c1 = sin(-1)
+    c1_add_num = c1 + 2
+    assert type(c1_add_num) is Constant
+    assert abs(c1_add_num.number - (math.sin(-1) + 2)) < 1e-12
+
+    c1_add_c2 = c1 + 3.5
+    assert type(c1_add_c2) is Constant
+
+    c2 = exp(0.5)
+    c1_add_c2 = c1 + c2
+    assert type(c1_add_c2) is Constant
+    assert abs(c1_add_c2.number - (math.sin(-1) + math.exp(0.5))) < 1e-12
+
+    m = Model()
+    x = m.addVar("x")
+    c1_add_genexpr = c1 + x
+    assert type(c1_add_genexpr) is GenExpr
+
+
+def test_constant_radd():
+    c1 = sin(-1)
+    num_add_c1 = 2 + c1
+    assert type(num_add_c1) is Constant
+    assert abs(num_add_c1.number - (2 + math.sin(-1))) < 1e-12
+
+
+def test_constant_sub():
+    c1 = sin(-1)
+    c1_sub_num = c1 - 2
+    assert type(c1_sub_num) is Constant
+    assert abs(c1_sub_num.number - (math.sin(-1) - 2)) < 1e-12
+
+    c2 = exp(0.5)
+    c1_sub_c2 = c1 - c2
+    assert type(c1_sub_c2) is Constant
+    assert abs(c1_sub_c2.number - (math.sin(-1) - math.exp(0.5))) < 1e-12
+
+
+def test_constant_rsub():
+    c1 = sin(-1)
+    num_sub_c1 = 2 - c1
+    assert type(num_sub_c1) is Constant
+    assert abs(num_sub_c1.number - (2 - math.sin(-1))) < 1e-12
+
+
+def test_constant_rmul():
+    c1 = sin(-1)
+    num_mul_c1 = -1 * c1
+    assert type(num_mul_c1) is Constant
+    assert abs(num_mul_c1.number - (-math.sin(-1))) < 1e-12
+
+
+def test_constant_div():
+    c1 = sin(-1)
+    c1_div_num = c1 / 2
+    assert type(c1_div_num) is Constant
+    assert abs(c1_div_num.number - (math.sin(-1) / 2)) < 1e-12
+
+    c2 = exp(0.5)
+    c1_div_c2 = c1 / c2
+    assert type(c1_div_c2) is Constant
+    assert abs(c1_div_c2.number - (math.sin(-1) / math.exp(0.5))) < 1e-12
+
+
+def test_constant_rdiv():
+    c1 = sin(-1)
+    num_div_c1 = 2 / c1
+    assert type(num_div_c1) is Constant
+    assert abs(num_div_c1.number - (2 / math.sin(-1))) < 1e-12
+
+
+def test_constant_div_zero():
+    c1 = sin(-1)
+    with pytest.raises(ZeroDivisionError):
+        c1 / 0
+    with pytest.raises(ZeroDivisionError):
+        c1 / Constant(0)
+    with pytest.raises(ZeroDivisionError):
+        1 / Constant(0)
+
+
 def test_Expr_add_Expr():
     m = Model()
     x = m.addVar(name="x")

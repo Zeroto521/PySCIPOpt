@@ -935,12 +935,59 @@ cdef class Constant(GenExpr):
         self.number = number
         self._op = Operator.const
 
+    def __add__(self, other: object) -> Union[Constant, GenExpr]:
+        if _is_number(other):
+            return Constant(self.number + other)
+        elif other is Constant:
+            return Constant(self.number + other.number)
+        return super().__add__(other)
+
+    def __radd__(self, other: object) -> Constant:
+        if _is_number(other):
+            return Constant(self.number + other)
+        return super().__radd__(other)
+
+    def __sub__(self, other: object) -> Union[Constant, GenExpr]:
+        if _is_number(other):
+            return Constant(self.number - other)
+        elif other is Constant:
+            return Constant(self.number - other.number)
+        return super().__sub__(other)
+
+    def __rsub__(self, other: object) -> Constant:
+        if _is_number(other):
+            return Constant(other - self.number)
+        return super().__rsub__(other)
+
     def __mul__(self, other: object) -> Union[Constant, GenExpr]:
         if _is_number(other):
             return Constant(self.number * other)
         elif other is Constant:
             return Constant(self.number * other.number)
         return super().__mul__(other)
+
+    def __rmul__(self, other: object) -> Constant:
+        if _is_number(other):
+            return Constant(self.number * other)
+        return super().__rmul__(other)
+
+    def __truediv__(self, other: object) -> Union[Constant, GenExpr]:
+        if _is_number(other):
+            if other == 0:
+                raise ZeroDivisionError("division by zero")
+            return Constant(self.number / other)
+        elif other is Constant:
+            if other.number == 0:
+                raise ZeroDivisionError("division by zero")
+            return Constant(self.number / other.number)
+        return super().__truediv__(other)
+
+    def __rtruediv__(self, other: object) -> Constant:
+        if _is_number(other):
+            if self.number == 0:
+                raise ZeroDivisionError("division by zero")
+            return Constant(other / self.number)
+        return super().__rtruediv__(other)
 
     def __pow__(self, other: object) -> Union[Constant, GenExpr]:
         if _is_number(other):
