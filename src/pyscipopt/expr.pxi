@@ -991,8 +991,12 @@ cdef class Constant(GenExpr):
 
     def __pow__(self, other) -> Union[Constant, GenExpr]:
         if _is_number(other):
+            if self.number == 0.0 and other < 0.0:
+                raise ZeroDivisionError("0.0 cannot be raised to a negative power")
             return Constant(self.number ** other)
         elif isinstance(other, Constant):
+            if self.number == 0.0 and other.number < 0.0:
+                raise ZeroDivisionError("0.0 cannot be raised to a negative power")
             return Constant(self.number ** other.number)
         return super().__pow__(other)
 
