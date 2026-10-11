@@ -938,7 +938,7 @@ cdef class Constant(GenExpr):
     def __add__(self, other: object) -> Union[Constant, GenExpr]:
         if _is_number(other):
             return Constant(self.number + other)
-        elif other is Constant:
+        elif isinstance(other, Constant):
             return Constant(self.number + other.number)
         return super().__add__(other)
 
@@ -950,7 +950,7 @@ cdef class Constant(GenExpr):
     def __sub__(self, other: object) -> Union[Constant, GenExpr]:
         if _is_number(other):
             return Constant(self.number - other)
-        elif other is Constant:
+        elif isinstance(other, Constant):
             return Constant(self.number - other.number)
         return super().__sub__(other)
 
@@ -962,7 +962,7 @@ cdef class Constant(GenExpr):
     def __mul__(self, other: object) -> Union[Constant, GenExpr]:
         if _is_number(other):
             return Constant(self.number * other)
-        elif other is Constant:
+        elif isinstance(other, Constant):
             return Constant(self.number * other.number)
         return super().__mul__(other)
 
@@ -976,7 +976,7 @@ cdef class Constant(GenExpr):
             if other == 0:
                 raise ZeroDivisionError("division by zero")
             return Constant(self.number / other)
-        elif other is Constant:
+        elif isinstance(other, Constant):
             if other.number == 0:
                 raise ZeroDivisionError("division by zero")
             return Constant(self.number / other.number)
@@ -992,7 +992,7 @@ cdef class Constant(GenExpr):
     def __pow__(self, other: object) -> Union[Constant, GenExpr]:
         if _is_number(other):
             return Constant(self.number ** other)
-        elif other is Constant:
+        elif isinstance(other, Constant):
             return Constant(self.number ** other.number)
         return super().__pow__(other)
 
