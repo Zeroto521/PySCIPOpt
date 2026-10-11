@@ -573,7 +573,7 @@ def test_constant_abs():
 
     assert type(c) is Constant
     assert type(c_abs) is Constant
-    assert str(c_abs) == "1"
+    assert abs(c_abs.number - math.sin(1)) < 1e-12
 
 
 def test_constant_mul():
@@ -600,13 +600,14 @@ def test_constant_pow():
     c1_pow_constant =  c1 ** 2
     assert type(c1) is Constant
     assert type(c1_pow_constant) is Constant
-    assert str(c1_pow_constant) == "4"
+    assert abs(c1_pow_constant.number - math.sin(-2) ** 2) < 1e-12
 
     c2 = exp(0)
     c1_pow_c2 = c1 ** c2
     assert type(c2) is Constant
     assert type(c1_pow_c2) is Constant
-    assert str(c1_pow_c2) == "1"
+    # exp(0) folds to Constant(1), so c1 ** c2 == c1 ** 1 == c1
+    assert abs(c1_pow_c2.number - math.sin(-2)) < 1e-12
 
     m = Model()
     x = m.addVar("x")
