@@ -12,6 +12,7 @@
 ### Fixed
 - Fixed Cython 3.3 compatibility (#1248)
 - Made `test_markDoNotAggrVar_and_getStatus` robust to SCIP presolve changes by discovering the aggregated/multi-aggregated variables instead of hardcoding them
+- Ensure probing has ended when freeing scip instance in benders
 ### Changed
 - Move magic methods (`__radd__`, `__sub__`, `__rsub__`, `__rmul__`, `__richcmp__`, `__neg__`, and `__rtruediv__`) to `ExprLike` base class (#1204)
 - Speed up `Expr.__add__` and `Expr.__iadd__` via the C-level API (#1205)
@@ -21,6 +22,8 @@
 - Integration tests now run in the merge queue before merging instead of after pushing to `master` (#1249)
 ### Removed
 - `SumExpr`.coefs has been removed; its values were always 1.0 (#1258)
+- Deprecated `getOp` method in `GenExpr` (#1259)
+- Deprecated inner enumerate class `Operator` (#1259)
 
 ## 6.2.1 - 2026.05.16
 ### Fixed
