@@ -1276,8 +1276,8 @@ cdef inline bint _is_number(object x):
     return PyNumber_Check(x)
 
 cdef inline bint _to_number(object x, double* out) noexcept:
-    """Extract a numeric value from a number or Constant; no allocation."""
-    if PyLong_Check(x) or PyFloat_Check(x):
+    """Extract a numeric value from anything _is_number accepts, plus Constant."""
+    if _is_number(x):
         out[0] = <double>x
         return True
     if <type>Py_TYPE(x) is Constant:
