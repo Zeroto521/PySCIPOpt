@@ -989,7 +989,7 @@ cdef class Constant(GenExpr):
             return Constant(other / self.number)
         return super().__rtruediv__(other)
 
-    def __pow__(self, other: object) -> Union[Constant, GenExpr]:
+    def __pow__(self, other) -> Union[Constant, GenExpr]:
         if _is_number(other):
             return Constant(self.number ** other)
         elif isinstance(other, Constant):
