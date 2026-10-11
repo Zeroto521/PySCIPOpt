@@ -996,13 +996,13 @@ cdef class Constant(GenExpr):
             return Constant(self.number ** other.number)
         return super().__pow__(other)
 
+    def __neg__(self, /) -> Constant:
+        return Constant(-self.number)
+
     def __abs__(self) -> Constant:
         cdef Constant res = <Constant>self.copy()
         res.number = c_fabs(res.number)
         return res
-
-    def __neg__(self, /) -> Constant:
-        return Constant(-self.number)
 
     def exp(self, /) -> Constant:
         return Constant(c_exp(self.number))
