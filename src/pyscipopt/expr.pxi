@@ -936,68 +936,63 @@ cdef class Constant(GenExpr):
         self._op = Operator.const
 
     def __add__(self, other: object) -> Union[Constant, GenExpr]:
-        if _is_number(other):
-            return Constant(self.number + other)
-        elif isinstance(other, Constant):
-            return Constant(self.number + other.number)
+        cdef double n
+        if _to_number(other, &n):
+            return Constant(self.number + n)
         return super().__add__(other)
 
     def __radd__(self, other: object) -> Constant:
-        if _is_number(other):
-            return Constant(self.number + other)
+        cdef double n
+        if _to_number(other, &n):
+            return Constant(self.number + n)
         return super().__radd__(other)
 
     def __sub__(self, other: object) -> Union[Constant, GenExpr]:
-        if _is_number(other):
-            return Constant(self.number - other)
-        elif isinstance(other, Constant):
-            return Constant(self.number - other.number)
+        cdef double n
+        if _to_number(other, &n):
+            return Constant(self.number - n)
         return super().__sub__(other)
 
     def __rsub__(self, other: object) -> Constant:
-        if _is_number(other):
-            return Constant(other - self.number)
+        cdef double n
+        if _to_number(other, &n):
+            return Constant(n - self.number)
         return super().__rsub__(other)
 
     def __mul__(self, other: object) -> Union[Constant, GenExpr]:
-        if _is_number(other):
-            return Constant(self.number * other)
-        elif isinstance(other, Constant):
-            return Constant(self.number * other.number)
+        cdef double n
+        if _to_number(other, &n):
+            return Constant(self.number * n)
         return super().__mul__(other)
 
     def __rmul__(self, other: object) -> Constant:
-        if _is_number(other):
-            return Constant(self.number * other)
+        cdef double n
+        if _to_number(other, &n):
+            return Constant(self.number * n)
         return super().__rmul__(other)
 
     def __truediv__(self, other: object) -> Union[Constant, GenExpr]:
-        if _is_number(other):
-            if other == 0:
+        cdef double n
+        if _to_number(other, &n):
+            if n == 0.0:
                 raise ZeroDivisionError("division by zero")
-            return Constant(self.number / other)
-        elif isinstance(other, Constant):
-            if other.number == 0:
-                raise ZeroDivisionError("division by zero")
-            return Constant(self.number / other.number)
+            return Constant(self.number / n)
         return super().__truediv__(other)
 
     def __rtruediv__(self, other: object) -> Constant:
-        if _is_number(other):
-            if self.number == 0:
+        cdef double n
+        if _to_number(other, &n):
+            if self.number == 0.0:
                 raise ZeroDivisionError("division by zero")
-            return Constant(other / self.number)
+            return Constant(n / self.number)
         return super().__rtruediv__(other)
 
     def __pow__(self, other) -> Union[Constant, GenExpr]:
-        if _is_number(other):
-            if self.number == 0.0 and other < 0.0:
+        cdef double n
+        if _to_number(other, &n):
+            if self.number == 0.0 and n < 0.0:
                 raise ZeroDivisionError("0.0 cannot be raised to a negative power")
-            return Constant(self.number ** other)
-        elif isinstance(other, Constant):
-            if self.number == 0.0 and other.number < 0.0:
-                raise ZeroDivisionError("0.0 cannot be raised to a negative power")
-            return Constant(self.number ** other.number)
+            return Constant(self.number ** n)
         return super().__pow__(other)
 
     def __neg__(self, /) -> Constant:
@@ -1279,6 +1274,16 @@ cdef inline bint _is_number(object x):
     if cnp.PyArray_Check(x) or isinstance(x, (ExprLike, list, tuple)):
         return False
     return PyNumber_Check(x)
+
+cdef inline bint _to_number(object x, double* out) noexcept:
+    """Extract a numeric value from a number or Constant; no allocation."""
+    if PyLong_Check(x) or PyFloat_Check(x):
+        out[0] = <double>x
+        return True
+    if isinstance(x, Constant):
+        out[0] = (<Constant>x).number
+        return True
+    return False
 
 cdef inline bint _is_expr_compatible(object x):
     return _is_number(x) or isinstance(x, Expr)
