@@ -1280,7 +1280,7 @@ cdef inline bint _to_number(object x, double* out) noexcept:
     if PyLong_Check(x) or PyFloat_Check(x):
         out[0] = <double>x
         return True
-    if isinstance(x, Constant):
+    if <type>Py_TYPE(x) is Constant:
         out[0] = (<Constant>x).number
         return True
     return False
