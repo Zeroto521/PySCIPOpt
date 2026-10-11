@@ -935,14 +935,14 @@ cdef class Constant(GenExpr):
         self.number = number
         self._op = Operator.const
 
-    def __mul__(self, other) -> Union[Constant, GenExpr]:
+    def __mul__(self, other: object) -> Union[Constant, GenExpr]:
         if _is_number(other):
             return Constant(self.number * other)
         elif other is Constant:
             return Constant(self.number * other.number)
         return super().__mul__(other)
 
-    def __pow__(self, other) -> Union[Constant, GenExpr]:
+    def __pow__(self, other: object) -> Union[Constant, GenExpr]:
         if _is_number(other):
             return Constant(self.number ** other)
         elif other is Constant:
