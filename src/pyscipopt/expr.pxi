@@ -951,7 +951,7 @@ cdef class Constant(GenExpr):
 
     def __abs__(self) -> Constant:
         cdef Constant res = <Constant>self.copy()
-        res.number = abs(res.number)
+        res.number = c_fabs(res.number)
         return res
 
     def __neg__(self, /) -> Constant:
