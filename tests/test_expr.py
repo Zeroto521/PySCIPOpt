@@ -568,7 +568,7 @@ def test_term_eq():
 
 
 def test_constant_abs():
-    c = sin(-1).children[0]
+    c = sin(-1)
     c_abs = abs(c)
 
     assert type(c) is Constant
@@ -577,16 +577,16 @@ def test_constant_abs():
 
 
 def test_constant_mul():
-    c1 = sin(-1).children[0]
+    c1 = sin(-1)
     c1_mul_constant =  c1 * -1
     assert type(c1) is Constant
     assert type(c1_mul_constant) is Constant
 
-    c2 = exp(0.5).children[0]
+    c2 = exp(0.5)
     c1_mul_c2 = c1 * c2
     assert type(c2) is Constant
     assert type(c1_mul_c2) is Constant
-    assert str(c1_mul_c2) == "-0.5"
+    assert abs(c1_mul_c2.number - (math.sin(-1) * math.exp(0.5))) < 1e-12
 
     m = Model()
     x = m.addVar("x")
@@ -596,13 +596,13 @@ def test_constant_mul():
 
 
 def test_constant_pow():
-    c1 = sin(-2).children[0]
+    c1 = sin(-2)
     c1_pow_constant =  c1 ** 2
     assert type(c1) is Constant
     assert type(c1_pow_constant) is Constant
     assert str(c1_pow_constant) == "4"
 
-    c2 = exp(0).children[0]
+    c2 = exp(0)
     c1_pow_c2 = c1 ** c2
     assert type(c2) is Constant
     assert type(c1_pow_c2) is Constant
@@ -612,6 +612,50 @@ def test_constant_pow():
     x = m.addVar("x")
     with pytest.raises(NotImplementedError):
         c1 ** x
+
+
+def test_constant_unary_folds():
+    c = Constant(2.0)
+    assert type(c.exp()) is Constant
+    assert abs(c.exp().number - math.exp(2.0)) < 1e-12
+
+    assert type(c.log()) is Constant
+    assert abs(c.log().number - math.log(2.0)) < 1e-12
+
+    assert type(c.sqrt()) is Constant
+    assert abs(c.sqrt().number - math.sqrt(2.0)) < 1e-12
+
+    assert type(c.sin()) is Constant
+    assert abs(c.sin().number - math.sin(2.0)) < 1e-12
+
+    assert type(c.cos()) is Constant
+    assert abs(c.cos().number - math.cos(2.0)) < 1e-12
+
+
+def test_constant_unary_folds_via_module():
+    assert type(exp(1.0)) is Constant
+    assert abs(exp(1.0).number - math.e) < 1e-12
+
+    assert type(log(2.0)) is Constant
+    assert abs(log(2.0).number - math.log(2.0)) < 1e-12
+
+    assert type(sqrt(4.0)) is Constant
+    assert abs(sqrt(4.0).number - 2.0) < 1e-12
+
+    assert type(sin(0.0)) is Constant
+    assert abs(sin(0.0).number) < 1e-12
+
+    assert type(cos(0.0)) is Constant
+    assert abs(cos(0.0).number - 1.0) < 1e-12
+
+
+def test_constant_unary_domain_errors():
+    with pytest.raises(ValueError, match="math domain"):
+        log(0.0)
+    with pytest.raises(ValueError, match="math domain"):
+        log(-1.0)
+    with pytest.raises(ValueError, match="math domain"):
+        sqrt(-1.0)
 
 
 def test_Expr_add_Expr():

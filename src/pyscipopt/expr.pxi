@@ -957,6 +957,33 @@ cdef class Constant(GenExpr):
     def __neg__(self, /) -> Constant:
         return Constant(-self.number)
 
+    def exp(self, /) -> Constant:
+        return Constant(c_exp(self.number))
+
+    def log(self, /) -> Constant:
+        cdef double val = self.number
+        if val <= 0.0:
+            raise ValueError("math domain error")
+        return Constant(c_log(val))
+
+    def sqrt(self, /) -> Constant:
+        cdef double val = self.number
+        if val < 0.0:
+            raise ValueError("math domain error")
+        return Constant(c_sqrt(val))
+
+    def sin(self, /) -> Constant:
+        cdef double val = self.number
+        if c_fabs(val) == INFINITY:
+            raise ValueError("math domain error")
+        return Constant(c_sin(val))
+
+    def cos(self, /) -> Constant:
+        cdef double val = self.number
+        if c_fabs(val) == INFINITY:
+            raise ValueError("math domain error")
+        return Constant(c_cos(val))
+
     def __repr__(self) -> str:
         return str(self.number)
 
