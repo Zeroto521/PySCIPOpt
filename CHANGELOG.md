@@ -2,6 +2,7 @@
 
 ## Unreleased
 ### Added
+- `Constant` folds unary (`exp`/`log`/`sqrt`/`sin`/`cos`) and binary (`+`/`-`/`*`/`/`) arithmetic with numbers or `Constant` into a single `Constant`
 ### Fixed
 ### Changed
 ### Removed
