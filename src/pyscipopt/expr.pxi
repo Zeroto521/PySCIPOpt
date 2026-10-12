@@ -1275,7 +1275,7 @@ cdef inline bint _is_number(object x):
         return False
     return PyNumber_Check(x)
 
-cdef inline bint _to_number(object x, double* out) noexcept:
+cdef inline bint _to_number(object x, double* out) except *:
     """Extract a numeric value from anything _is_number accepts, plus Constant."""
     if _is_number(x):
         out[0] = <double>x
