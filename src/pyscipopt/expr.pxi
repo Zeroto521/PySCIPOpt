@@ -885,10 +885,10 @@ cdef class LogExpr(UnaryExpr):
         return f"log({self.children[0]})"
 
     cpdef double _evaluate(self, Solution sol) except *:
-        cdef double val = (<GenExpr>self.children[0])._evaluate(sol)
-        if val <= 0.0:
+        cdef double num = (<GenExpr>self.children[0])._evaluate(sol)
+        if num <= 0.0:
             raise ValueError("math domain error")
-        return c_log(val)
+        return c_log(num)
 
 
 cdef class SqrtExpr(UnaryExpr):
@@ -897,10 +897,10 @@ cdef class SqrtExpr(UnaryExpr):
         return f"sqrt({self.children[0]})"
 
     cpdef double _evaluate(self, Solution sol) except *:
-        cdef double val = (<GenExpr>self.children[0])._evaluate(sol)
-        if val < 0.0:
+        cdef double num = (<GenExpr>self.children[0])._evaluate(sol)
+        if num < 0.0:
             raise ValueError("math domain error")
-        return c_sqrt(val)
+        return c_sqrt(num)
 
 
 cdef class SinExpr(UnaryExpr):
@@ -909,10 +909,10 @@ cdef class SinExpr(UnaryExpr):
         return f"sin({self.children[0]})"
 
     cpdef double _evaluate(self, Solution sol) except *:
-        cdef double val = (<GenExpr>self.children[0])._evaluate(sol)
-        if c_fabs(val) == INFINITY:
+        cdef double num = (<GenExpr>self.children[0])._evaluate(sol)
+        if c_fabs(num) == INFINITY:
             raise ValueError("math domain error")
-        return c_sin(val)
+        return c_sin(num)
 
 
 cdef class CosExpr(UnaryExpr):
@@ -921,10 +921,10 @@ cdef class CosExpr(UnaryExpr):
         return f"cos({self.children[0]})"
 
     cpdef double _evaluate(self, Solution sol) except *:
-        cdef double val = (<GenExpr>self.children[0])._evaluate(sol)
-        if c_fabs(val) == INFINITY:
+        cdef double num = (<GenExpr>self.children[0])._evaluate(sol)
+        if c_fabs(num) == INFINITY:
             raise ValueError("math domain error")
-        return c_cos(val)
+        return c_cos(num)
 
 
 cdef class Constant(GenExpr):
@@ -936,63 +936,63 @@ cdef class Constant(GenExpr):
         self._op = Operator.const
 
     def __add__(self, other: object) -> Union[Constant, GenExpr]:
-        cdef double val
-        if _to_number(other, &val):
-            return Constant(self.number + val)
+        cdef double num
+        if _to_number(other, &num):
+            return Constant(self.number + num)
         return super().__add__(other)
 
     def __radd__(self, other: object) -> Constant:
-        cdef double val
-        if _to_number(other, &val):
-            return Constant(self.number + val)
+        cdef double num
+        if _to_number(other, &num):
+            return Constant(self.number + num)
         return super().__radd__(other)
 
     def __sub__(self, other: object) -> Union[Constant, GenExpr]:
-        cdef double val
-        if _to_number(other, &val):
-            return Constant(self.number - val)
+        cdef double num
+        if _to_number(other, &num):
+            return Constant(self.number - num)
         return super().__sub__(other)
 
     def __rsub__(self, other: object) -> Constant:
-        cdef double val
-        if _to_number(other, &val):
-            return Constant(val - self.number)
+        cdef double num
+        if _to_number(other, &num):
+            return Constant(num - self.number)
         return super().__rsub__(other)
 
     def __mul__(self, other: object) -> Union[Constant, GenExpr]:
-        cdef double val
-        if _to_number(other, &val):
-            return Constant(self.number * val)
+        cdef double num
+        if _to_number(other, &num):
+            return Constant(self.number * num)
         return super().__mul__(other)
 
     def __rmul__(self, other: object) -> Constant:
-        cdef double val
-        if _to_number(other, &val):
-            return Constant(self.number * val)
+        cdef double num
+        if _to_number(other, &num):
+            return Constant(self.number * num)
         return super().__rmul__(other)
 
     def __truediv__(self, other: object) -> Union[Constant, GenExpr]:
-        cdef double val
-        if _to_number(other, &val):
-            if val == 0.0:
+        cdef double num
+        if _to_number(other, &num):
+            if num == 0.0:
                 raise ZeroDivisionError("division by zero")
-            return Constant(self.number / val)
+            return Constant(self.number / num)
         return super().__truediv__(other)
 
     def __rtruediv__(self, other: object) -> Constant:
-        cdef double val
-        if _to_number(other, &val):
+        cdef double num
+        if _to_number(other, &num):
             if self.number == 0.0:
                 raise ZeroDivisionError("division by zero")
-            return Constant(val / self.number)
+            return Constant(num / self.number)
         return super().__rtruediv__(other)
 
     def __pow__(self, other) -> Union[Constant, GenExpr]:
-        cdef double val
-        if _to_number(other, &val):
-            if self.number == 0.0 and val < 0.0:
+        cdef double num
+        if _to_number(other, &num):
+            if self.number == 0.0 and num < 0.0:
                 raise ZeroDivisionError("0.0 cannot be raised to a negative power")
-            return Constant(self.number ** val)
+            return Constant(self.number ** num)
         return super().__pow__(other)
 
     def __neg__(self, /) -> Constant:
@@ -1007,28 +1007,28 @@ cdef class Constant(GenExpr):
         return Constant(c_exp(self.number))
 
     def log(self, /) -> Constant:
-        cdef double val = self.number
-        if val <= 0.0:
+        cdef double num = self.number
+        if num <= 0.0:
             raise ValueError("math domain error")
-        return Constant(c_log(val))
+        return Constant(c_log(num))
 
     def sqrt(self, /) -> Constant:
-        cdef double val = self.number
-        if val < 0.0:
+        cdef double num = self.number
+        if num < 0.0:
             raise ValueError("math domain error")
-        return Constant(c_sqrt(val))
+        return Constant(c_sqrt(num))
 
     def sin(self, /) -> Constant:
-        cdef double val = self.number
-        if c_fabs(val) == INFINITY:
+        cdef double num = self.number
+        if c_fabs(num) == INFINITY:
             raise ValueError("math domain error")
-        return Constant(c_sin(val))
+        return Constant(c_sin(num))
 
     def cos(self, /) -> Constant:
-        cdef double val = self.number
-        if c_fabs(val) == INFINITY:
+        cdef double num = self.number
+        if c_fabs(num) == INFINITY:
             raise ValueError("math domain error")
-        return Constant(c_cos(val))
+        return Constant(c_cos(num))
 
     def __repr__(self) -> str:
         return str(self.number)
