@@ -936,63 +936,63 @@ cdef class Constant(GenExpr):
         self._op = Operator.const
 
     def __add__(self, other: object) -> Union[Constant, GenExpr]:
-        cdef double n
-        if _to_number(other, &n):
-            return Constant(self.number + n)
+        cdef double val
+        if _to_number(other, &val):
+            return Constant(self.number + val)
         return super().__add__(other)
 
     def __radd__(self, other: object) -> Constant:
-        cdef double n
-        if _to_number(other, &n):
-            return Constant(self.number + n)
+        cdef double val
+        if _to_number(other, &val):
+            return Constant(self.number + val)
         return super().__radd__(other)
 
     def __sub__(self, other: object) -> Union[Constant, GenExpr]:
-        cdef double n
-        if _to_number(other, &n):
-            return Constant(self.number - n)
+        cdef double val
+        if _to_number(other, &val):
+            return Constant(self.number - val)
         return super().__sub__(other)
 
     def __rsub__(self, other: object) -> Constant:
-        cdef double n
-        if _to_number(other, &n):
-            return Constant(n - self.number)
+        cdef double val
+        if _to_number(other, &val):
+            return Constant(val - self.number)
         return super().__rsub__(other)
 
     def __mul__(self, other: object) -> Union[Constant, GenExpr]:
-        cdef double n
-        if _to_number(other, &n):
-            return Constant(self.number * n)
+        cdef double val
+        if _to_number(other, &val):
+            return Constant(self.number * val)
         return super().__mul__(other)
 
     def __rmul__(self, other: object) -> Constant:
-        cdef double n
-        if _to_number(other, &n):
-            return Constant(self.number * n)
+        cdef double val
+        if _to_number(other, &val):
+            return Constant(self.number * val)
         return super().__rmul__(other)
 
     def __truediv__(self, other: object) -> Union[Constant, GenExpr]:
-        cdef double n
-        if _to_number(other, &n):
-            if n == 0.0:
+        cdef double val
+        if _to_number(other, &val):
+            if val == 0.0:
                 raise ZeroDivisionError("division by zero")
-            return Constant(self.number / n)
+            return Constant(self.number / val)
         return super().__truediv__(other)
 
     def __rtruediv__(self, other: object) -> Constant:
-        cdef double n
-        if _to_number(other, &n):
+        cdef double val
+        if _to_number(other, &val):
             if self.number == 0.0:
                 raise ZeroDivisionError("division by zero")
-            return Constant(n / self.number)
+            return Constant(val / self.number)
         return super().__rtruediv__(other)
 
     def __pow__(self, other) -> Union[Constant, GenExpr]:
-        cdef double n
-        if _to_number(other, &n):
-            if self.number == 0.0 and n < 0.0:
+        cdef double val
+        if _to_number(other, &val):
+            if self.number == 0.0 and val < 0.0:
                 raise ZeroDivisionError("0.0 cannot be raised to a negative power")
-            return Constant(self.number ** n)
+            return Constant(self.number ** val)
         return super().__pow__(other)
 
     def __neg__(self, /) -> Constant:
