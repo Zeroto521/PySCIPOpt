@@ -42,7 +42,7 @@
 # which should, in princple, modify the expr. However, since we do not implement __isub__, __sub__
 # gets called (I guess) and so a copy is returned.
 # Modifying the expression directly would be a bug, given that the expression might be re-used by the user. </pre>
-import math
+import warnings
 from typing import TYPE_CHECKING, Literal, Union
 
 import numpy as np
@@ -54,6 +54,13 @@ from cpython.number cimport PyNumber_Check
 from cpython.object cimport Py_LE, Py_EQ, Py_GE, Py_TYPE
 from cpython.ref cimport PyObject
 from cpython.tuple cimport PyTuple_GET_ITEM
+from libc.math cimport cos as c_cos
+from libc.math cimport exp as c_exp
+from libc.math cimport fabs as c_fabs
+from libc.math cimport log as c_log
+from libc.math cimport sqrt as c_sqrt
+from libc.math cimport sin as c_sin
+from libc.math cimport INFINITY
 
 cimport numpy as cnp
 from pyscipopt.scip cimport Variable, Solution
@@ -137,7 +144,7 @@ cdef class Term:
         res.hashval = <Py_ssize_t>hash(tuple(v.ptr() for v in res.vartuple))
         return res
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return 'Term(%s)' % ', '.join([str(v) for v in self.vartuple])
 
     cpdef double _evaluate(self, Solution sol) except *:
@@ -172,7 +179,7 @@ def buildGenExprObj(expr: Union[int, float, np.number, Expr, GenExpr]) -> GenExp
         # each term is either a variable (which gets transformed into varexpr)
         # or a product of variables (which gets tranformed into a prod)
         sumexpr = SumExpr()
-        for vars, coef in expr.as_expr().terms.items():
+        for vars, coef in (<ExprLike>expr).as_expr().terms.items():
             if len(vars) == 0:
                 sumexpr += coef
             elif len(vars) == 1:
@@ -267,25 +274,25 @@ cdef class ExprLike:
         return self.as_expr() + other
 
     def __radd__(self, other, /):
-        return self.as_expr() + other
+        return self + other
 
     def __sub__(self, other, /):
-        return self.as_expr() + (-other)
+        return self + (-other)
 
     def __rsub__(self, other, /):
-        return (-self.as_expr()) + other
+        return (-self) + other
 
     def __mul__(self, other, /):
         return self.as_expr() * other
 
     def __rmul__(self, other, /):
-        return self.as_expr() * other
+        return self * other
 
     def __truediv__(self, other, /):
         return self.as_expr() / other
 
     def __rtruediv__(self, other, /) -> GenExpr:
-        return buildGenExprObj(other) / self.as_expr()
+        return buildGenExprObj(other) / self
 
     def __pow__(self, other, /):
         return self.as_expr() ** other
@@ -294,33 +301,36 @@ cdef class ExprLike:
         return other ** self.as_expr()
 
     def __richcmp__(self, other, int op):
-        return _expr_richcmp(self.as_expr(), other, op)
+        return _expr_richcmp(self, other, op)
 
     def __neg__(self, /) -> Union[Expr, GenExpr]:
-        return self.as_expr() * -1.0
+        return self * -1.0
 
-    def __abs__(self, /) -> GenExpr:
-        return UnaryExpr(Operator.fabs, buildGenExprObj(self.as_expr()))
+    def __pos__(self, /) -> Union[Expr, GenExpr]:
+        return self.copy()
 
-    def exp(self, /) -> GenExpr:
-        return UnaryExpr(Operator.exp, buildGenExprObj(self.as_expr()))
+    def __abs__(self, /) -> AbsExpr:
+        return AbsExpr(Operator.fabs, buildGenExprObj(self))
 
-    def log(self, /) -> GenExpr:
-        return UnaryExpr(Operator.log, buildGenExprObj(self.as_expr()))
+    def exp(self, /) -> ExpExpr:
+        return ExpExpr(Operator.exp, buildGenExprObj(self))
 
-    def sqrt(self, /) -> GenExpr:
-        return UnaryExpr(Operator.sqrt, buildGenExprObj(self.as_expr()))
+    def log(self, /) -> LogExpr:
+        return LogExpr(Operator.log, buildGenExprObj(self))
 
-    def sin(self, /) -> GenExpr:
-        return UnaryExpr(Operator.sin, buildGenExprObj(self.as_expr()))
+    def sqrt(self, /) -> SqrtExpr:
+        return SqrtExpr(Operator.sqrt, buildGenExprObj(self))
 
-    def cos(self, /) -> GenExpr:
-        return UnaryExpr(Operator.cos, buildGenExprObj(self.as_expr()))
+    def sin(self, /) -> SinExpr:
+        return SinExpr(Operator.sin, buildGenExprObj(self))
+
+    def cos(self, /) -> CosExpr:
+        return CosExpr(Operator.cos, buildGenExprObj(self))
 
     def degree(self, /) -> float:
         return self.as_expr().degree()
 
-    cdef ExprLike as_expr(self):
+    cdef Expr as_expr(self):
         raise NotImplementedError(
             f"{self.__class__.__name__!s} need to implement as_expr() method"
         )
@@ -330,6 +340,11 @@ cdef class ExprLike:
 
     cpdef double _evaluate(self, Solution sol) except *:
         return self.as_expr()._evaluate(sol)
+
+    cdef ExprLike copy(self, bint copy=True):
+        raise NotImplementedError(
+            f"{self.__class__.__name__!s} need to implement copy() method"
+        )
 
 
 ##@details Polynomial expressions of variables with operator overloading. \n
@@ -355,6 +370,8 @@ cdef class Expr(ExprLike):
 
     def __add__(self, other, /):
         if not _is_expr_compatible(other):
+            if isinstance(other, GenExpr):
+                return other.__add__(self)
             return NotImplemented
 
         if _is_number(other):
@@ -377,6 +394,8 @@ cdef class Expr(ExprLike):
 
     def __mul__(self, other, /):
         if not _is_expr_compatible(other):
+            if isinstance(other, GenExpr):
+                return other.__mul__(self)
             return NotImplemented
 
         cdef dict res = {}
@@ -397,7 +416,7 @@ cdef class Expr(ExprLike):
         elif isinstance(other, (Variable, Expr)):
             while PyDict_Next(self.terms, &pos1, &k1_ptr, &v1_ptr):
                 pos2 = <Py_ssize_t>0
-                while PyDict_Next(other.as_expr().terms, &pos2, &k2_ptr, &v2_ptr):
+                while PyDict_Next((<ExprLike>other).as_expr().terms, &pos2, &k2_ptr, &v2_ptr):
                     child = (<Term>k1_ptr) * (<Term>k2_ptr)
                     coef = (<double>(<object>v1_ptr)) * (<double>(<object>v2_ptr))
                     if (old_v_ptr := PyDict_GetItem(res, child)) != NULL:
@@ -442,7 +461,7 @@ cdef class Expr(ExprLike):
             raise ValueError("Base of a**x must be positive, as expression is reformulated to scip.exp(x * scip.log(a)); got %g" % base)
         return (self * Constant(base).log()).exp()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return 'Expr(%s)' % repr(self.terms)
 
     def degree(self, /) -> int:
@@ -473,6 +492,12 @@ cdef class Expr(ExprLike):
             res += coef * term._evaluate(sol)
         return res
 
+    cdef Expr copy(self, bint copy=True):
+        cdef object cls = <type>Py_TYPE(self)
+        cdef Expr res = cls.__new__(cls)
+        res.terms = self.terms.copy() if copy else self.terms
+        return res
+
 
 cdef class ExprCons:
     '''Constraints with a polynomial expressions and lower/upper bounds.'''
@@ -493,7 +518,7 @@ cdef class ExprCons:
             c = self.expr[CONST]
             self.expr -= c
             assert self.expr[CONST] == 0.0
-            self.expr.normalize()
+            (<ExprLike>self.expr).normalize()
         else:
             assert isinstance(self.expr, GenExpr)
             return
@@ -524,7 +549,7 @@ cdef class ExprCons:
         else:
             raise NotImplementedError("Ranged ExprCons can only support with '<=' or '>='.")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return 'ExprCons(%s, %s, %s)' % (self.expr, self._lhs, self._rhs)
 
     def __bool__(self):
@@ -559,6 +584,10 @@ def quickprod(termlist):
 
 
 class Op:
+    """Deprecated internal operator enum; will be removed in the next release.
+
+    Use type(expr) to check the expression type instead of this enum.
+    """
     const = 'const'
     varidx = 'var'
     exp, log, sqrt, sin, cos = 'exp', 'log', 'sqrt', 'sin', 'cos'
@@ -568,6 +597,7 @@ class Op:
     fabs = 'abs'
 
 Operator = Op()
+
 
 ##@details <pre> General expressions of variables with operator overloading.
 #
@@ -580,7 +610,7 @@ Operator = Op()
 cdef class GenExpr(ExprLike):
 
     cdef public _op
-    cdef public children
+    cdef readonly children
 
     def __init__(self): # do we need it
         ''' '''
@@ -594,25 +624,21 @@ cdef class GenExpr(ExprLike):
         ans = SumExpr()
 
         # add left term
-        if left.getOp() == Operator.add:
-            ans.coefs.extend(left.coefs)
+        if <type>Py_TYPE(left) is SumExpr:
             ans.children.extend(left.children)
             ans.constant += left.constant
-        elif left.getOp() == Operator.const:
+        elif <type>Py_TYPE(left) is Constant:
             ans.constant += left.number
         else:
-            ans.coefs.append(1.0)
             ans.children.append(left)
 
         # add right term
-        if right.getOp() == Operator.add:
-            ans.coefs.extend(right.coefs)
+        if <type>Py_TYPE(right) is SumExpr:
             ans.children.extend(right.children)
             ans.constant += right.constant
-        elif right.getOp() == Operator.const:
+        elif <type>Py_TYPE(right) is Constant:
             ans.constant += right.number
         else:
-            ans.coefs.append(1.0)
             ans.children.append(right)
 
         return ans
@@ -623,23 +649,20 @@ cdef class GenExpr(ExprLike):
     #    right = buildGenExprObj(other)
     #
     #    # transform self into sum
-    #    if self.getOp() != Operator.add:
+    #    if <type>Py_TYPE(self) is not SumExpr:
     #        newsum = SumExpr()
-    #        if self.getOp() == Operator.const:
+    #        if <type>Py_TYPE(self) is Constant:
     #            newsum.constant += self.number
     #        else:
-    #            newsum.coefs.append(1.0)
     #            newsum.children.append(self.copy()) # TODO: what is copy?
     #        self = newsum
     #    # add right term
-    #    if right.getOp() == Operator.add:
-    #        self.coefs.extend(right.coefs)
+    #    if <type>Py_TYPE(right) is SumExpr:
     #        self.children.extend(right.children)
     #        self.constant += right.constant
-    #    elif right.getOp() == Operator.const:
+    #    elif <type>Py_TYPE(right) is Constant:
     #        self.constant += right.number
     #    else:
-    #        self.coefs.append(1.0)
     #        self.children.append(right)
     #    return self
 
@@ -652,19 +675,19 @@ cdef class GenExpr(ExprLike):
         ans = ProdExpr()
 
         # multiply left factor
-        if left.getOp() == Operator.prod:
+        if <type>Py_TYPE(left) is ProdExpr:
             ans.children.extend(left.children)
             ans.constant *= left.constant
-        elif left.getOp() == Operator.const:
+        elif <type>Py_TYPE(left) is Constant:
             ans.constant *= left.number
         else:
             ans.children.append(left)
 
         # multiply right factor
-        if right.getOp() == Operator.prod:
+        if <type>Py_TYPE(right) is ProdExpr:
             ans.children.extend(right.children)
             ans.constant *= right.constant
-        elif right.getOp() == Operator.const:
+        elif <type>Py_TYPE(right) is Constant:
             ans.constant *= right.number
         else:
             ans.children.append(right)
@@ -676,18 +699,18 @@ cdef class GenExpr(ExprLike):
     #    assert isinstance(self, Expr)
     #    right = buildGenExprObj(other)
     #    # transform self into prod
-    #    if self.getOp() != Operator.prod:
+    #    if <type>Py_TYPE(self) is not ProdExpr:
     #        newprod = ProdExpr()
-    #        if self.getOp() == Operator.const:
+    #        if <type>Py_TYPE(self) is Constant:
     #            newprod.constant *= self.number
     #        else:
     #            newprod.children.append(self.copy()) # TODO: what is copy?
     #        self = newprod
     #    # multiply right factor
-    #    if right.getOp() == Operator.prod:
+    #    if <type>Py_TYPE(right) is ProdExpr:
     #        self.children.extend(right.children)
     #        self.constant *= right.constant
-    #    elif right.getOp() == Operator.const:
+    #    elif <type>Py_TYPE(right) is Constant:
     #        self.constant *= right.number
     #    else:
     #        self.children.append(right)
@@ -695,9 +718,9 @@ cdef class GenExpr(ExprLike):
 
     def __pow__(self, other, /):
         expo = buildGenExprObj(other)
-        if expo.getOp() != Operator.const:
+        if <type>Py_TYPE(expo) is not Constant:
             raise NotImplementedError("exponents must be numbers")
-        if self.getOp() == Operator.const:
+        if <type>Py_TYPE(self) is Constant:
             return Constant(self.number**expo.number)
         ans = PowExpr()
         ans.children.append(self)
@@ -724,7 +747,7 @@ cdef class GenExpr(ExprLike):
 
         divisor = buildGenExprObj(other)
         # we can't divide by 0
-        if isinstance(divisor, GenExpr) and divisor.getOp() == Operator.const and divisor.number == 0.0:
+        if <type>Py_TYPE(divisor) is Constant and divisor.number == 0.0:
             raise ZeroDivisionError("cannot divide by 0")
         return self * divisor**(-1)
 
@@ -735,69 +758,80 @@ cdef class GenExpr(ExprLike):
 
     def degree(self, /) -> float:
         '''Note: none of these expressions should be polynomial'''
-        return float('inf') 
+        return INFINITY
 
     def getOp(self):
-        '''returns operator of GenExpr'''
-        return self._op
+        """returns operator of GenExpr
 
-    cdef GenExpr as_expr(self):
-        return self
+        .. deprecated:: 6.3.0
+            This method is deprecated and will be removed in a future version, use
+            `type(expr)` instead.
+        """
+        warnings.warn(
+            "`GenExpr.getOp` is deprecated and will be removed in a future version, use "
+            "`type(expr)` instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self._op
 
     cdef void normalize(self):
         ...
 
-    cdef GenExpr copy(self, bool copy = True):
+    cdef GenExpr copy(self, bint copy=True):
         cdef object cls = <type>Py_TYPE(self)
         cdef GenExpr res = cls.__new__(cls)
         res._op = self._op
         res.children = self.children.copy() if copy else self.children
-        if cls is SumExpr:
-            (<SumExpr>res).constant = (<SumExpr>self).constant
-            (<SumExpr>res).coefs = (<SumExpr>self).coefs.copy() if copy else (<SumExpr>self).coefs
-        if cls is ProdExpr:
-            (<ProdExpr>res).constant = (<ProdExpr>self).constant
-        elif cls is PowExpr:
-            (<PowExpr>res).expo = (<PowExpr>self).expo
         return res
 
 
 # Sum Expressions
 cdef class SumExpr(GenExpr):
 
-    cdef public constant
-    cdef public coefs
+    cdef readonly constant
 
     def __init__(self):
         self.constant = 0.0
-        self.coefs = []
         self.children = []
         self._op = Operator.add
-    def __repr__(self):
-        return self._op + "(" + str(self.constant) + "," + ",".join(map(lambda child : child.__repr__(), self.children)) + ")"
+
+    def __repr__(self) -> str:
+        return f"sum({self.constant},{','.join(map(str, self.children))})"
 
     cpdef double _evaluate(self, Solution sol) except *:
         cdef double res = self.constant
         cdef int i = 0, n = len(self.children)
         cdef list children = self.children
-        cdef list coefs = self.coefs
         for i in range(n):
-            res += <double>coefs[i] * (<GenExpr>children[i])._evaluate(sol)
+            res += (<GenExpr>children[i])._evaluate(sol)
+        return res
+
+    cdef SumExpr copy(self, bint copy=True):
+        cdef SumExpr res = SumExpr.__new__(SumExpr)
+        res._op = self._op
+        res.children = self.children.copy() if copy else self.children
+        res.constant = self.constant
         return res
 
 
 # Prod Expressions
 cdef class ProdExpr(GenExpr):
 
-    cdef public constant
+    cdef readonly constant
 
     def __init__(self):
         self.constant = 1.0
         self.children = []
         self._op = Operator.prod
 
-    def __repr__(self):
-        return self._op + "(" + str(self.constant) + "," + ",".join(map(lambda child : child.__repr__(), self.children)) + ")"
+    def __neg__(self, /) -> ProdExpr:
+        cdef ProdExpr res = self.copy(copy=True)
+        res.constant = -res.constant
+        return res
+
+    def __repr__(self) -> str:
+        return f"prod({self.constant},{','.join(map(str, self.children))})"
 
     cpdef double _evaluate(self, Solution sol) except *:
         cdef double res = self.constant
@@ -809,18 +843,23 @@ cdef class ProdExpr(GenExpr):
                 return 0.0
         return res
 
+    cdef ProdExpr copy(self, bint copy=True):
+        cdef ProdExpr res = ProdExpr.__new__(ProdExpr)
+        res._op = self._op
+        res.children = self.children.copy() if copy else self.children
+        res.constant = self.constant
+        return res
+
 
 # Var Expressions
 cdef class VarExpr(GenExpr):
-
-    cdef public var
 
     def __init__(self, var):
         self.children = [var]
         self._op = Operator.varidx
 
-    def __repr__(self):
-        return self.children[0].__repr__()
+    def __repr__(self) -> str:
+        return str(self.children[0])
 
     cpdef double _evaluate(self, Solution sol) except *:
         return (<Expr>self.children[0])._evaluate(sol)
@@ -829,52 +868,126 @@ cdef class VarExpr(GenExpr):
 # Pow Expressions
 cdef class PowExpr(GenExpr):
 
-    cdef public expo
+    cdef readonly expo
 
     def __init__(self):
         self.expo = 1.0
         self.children = []
         self._op = Operator.power
 
-    def __repr__(self):
-        return self._op + "(" + self.children[0].__repr__() + "," + str(self.expo) + ")"
+    def __repr__(self) -> str:
+        return f"**({self.children[0]},{self.expo})"
 
     cpdef double _evaluate(self, Solution sol) except *:
         return (<GenExpr>self.children[0])._evaluate(sol) ** self.expo
 
+    cdef PowExpr copy(self, bint copy=True):
+        cdef PowExpr res = PowExpr.__new__(PowExpr)
+        res._op = self._op
+        res.children = self.children.copy() if copy else self.children
+        res.expo = self.expo
+        return res
 
-# Exp, Log, Sqrt, Sin, Cos Expressions
+
 cdef class UnaryExpr(GenExpr):
-    def __init__(self, op, expr):
-        self.children = []
-        self.children.append(expr)
+
+    def __init__(self, op, expr: Union[Expr, GenExpr]):
         self._op = op
+        self.children = [expr]
 
-    def __abs__(self) -> UnaryExpr:
-        if self._op == "abs":
-            return <UnaryExpr>self.copy()
-        return UnaryExpr(Operator.fabs, self)
 
-    def __repr__(self):
-        return self._op + "(" + self.children[0].__repr__() + ")"
+cdef class AbsExpr(UnaryExpr):
+
+    def __abs__(self) -> AbsExpr:
+        return <AbsExpr>self.copy()
+
+    def __repr__(self) -> str:
+        return f"abs({self.children[0]})"
 
     cpdef double _evaluate(self, Solution sol) except *:
-        cdef double res = (<GenExpr>self.children[0])._evaluate(sol)
-        return math.fabs(res) if self._op == "abs" else getattr(math, self._op)(res)
+        return c_fabs((<GenExpr>self.children[0])._evaluate(sol))
 
 
-# class for constant expressions
+cdef class ExpExpr(UnaryExpr):
+
+    def __repr__(self) -> str:
+        return f"exp({self.children[0]})"
+
+    cpdef double _evaluate(self, Solution sol) except *:
+        return c_exp((<GenExpr>self.children[0])._evaluate(sol))
+
+
+cdef class LogExpr(UnaryExpr):
+
+    def __repr__(self) -> str:
+        return f"log({self.children[0]})"
+
+    cpdef double _evaluate(self, Solution sol) except *:
+        cdef double val = (<GenExpr>self.children[0])._evaluate(sol)
+        if val <= 0.0:
+            raise ValueError("math domain error")
+        return c_log(val)
+
+
+cdef class SqrtExpr(UnaryExpr):
+
+    def __repr__(self) -> str:
+        return f"sqrt({self.children[0]})"
+
+    cpdef double _evaluate(self, Solution sol) except *:
+        cdef double val = (<GenExpr>self.children[0])._evaluate(sol)
+        if val < 0.0:
+            raise ValueError("math domain error")
+        return c_sqrt(val)
+
+
+cdef class SinExpr(UnaryExpr):
+
+    def __repr__(self) -> str:
+        return f"sin({self.children[0]})"
+
+    cpdef double _evaluate(self, Solution sol) except *:
+        cdef double val = (<GenExpr>self.children[0])._evaluate(sol)
+        if c_fabs(val) == INFINITY:
+            raise ValueError("math domain error")
+        return c_sin(val)
+
+
+cdef class CosExpr(UnaryExpr):
+
+    def __repr__(self) -> str:
+        return f"cos({self.children[0]})"
+
+    cpdef double _evaluate(self, Solution sol) except *:
+        cdef double val = (<GenExpr>self.children[0])._evaluate(sol)
+        if c_fabs(val) == INFINITY:
+            raise ValueError("math domain error")
+        return c_cos(val)
+
+
 cdef class Constant(GenExpr):
-    cdef public number
-    def __init__(self,number):
+
+    cdef readonly number
+
+    def __init__(self, number: Union[int, float]):
         self.number = number
         self._op = Operator.const
 
-    def __repr__(self):
+    def __neg__(self, /) -> Constant:
+        return Constant(-self.number)
+
+    def __repr__(self) -> str:
         return str(self.number)
 
     cpdef double _evaluate(self, Solution sol) except *:
         return self.number
+
+    cdef Constant copy(self, bint copy=True):
+        # The copy parameter doesn't work; this is for compatibility.
+        cdef Constant res = Constant.__new__(Constant)
+        res._op = self._op
+        res.number = self.number
+        return res
 
 
 def exp(x):
@@ -1042,7 +1155,9 @@ cdef dict _to_dict(
     other: Union[Variable, Expr],
     bool copy = True,
 ):
-    cdef dict children = expr.as_expr().terms.copy() if copy else expr.as_expr().terms
+    cdef Expr _expr = (<ExprLike>expr).as_expr()
+    cdef Expr _other = (<ExprLike>other).as_expr()
+    cdef dict children = _expr.terms.copy() if copy else _expr.terms
     cdef Py_ssize_t pos = <Py_ssize_t>0
     cdef PyObject* k_ptr = NULL
     cdef PyObject* v_ptr = NULL
@@ -1050,7 +1165,7 @@ cdef dict _to_dict(
     cdef double other_v
     cdef object k_obj
 
-    while PyDict_Next(other.as_expr().terms, &pos, &k_ptr, &v_ptr):
+    while PyDict_Next(_other.terms, &pos, &k_ptr, &v_ptr):
         other_v = <double>(<object>v_ptr)
         k_obj = <object>k_ptr
         old_v_ptr = PyDict_GetItem(children, k_obj)
@@ -1072,7 +1187,7 @@ def expr_to_nodes(expr):
 
 def value_to_array(val, nodes):
     """adds a given value to an array"""
-    nodes.append(tuple(['const', [val]]))
+    nodes.append((Constant, [val]))
     return len(nodes) - 1
 
 # there many hacky things here: value_to_array is trying to mimick
@@ -1082,24 +1197,26 @@ def value_to_array(val, nodes):
 # haven't even consider substractions, but I guess we would interpret them as a - b = a + (-1) * b
 def expr_to_array(expr, nodes):
     """adds expression to array"""
-    op = expr._op
-    if op == Operator.const: # FIXME: constant expr should also have children!
-        nodes.append(tuple([op, [expr.number]]))
-    elif op != Operator.varidx:
+    t = <type>Py_TYPE(expr)
+    if t is Constant:  # FIXME: constant expr should also have children!
+        nodes.append((t, [expr.number]))
+
+    elif t is not VarExpr:
         indices = []
-        nchildren = len(expr.children)
         for child in expr.children:
-            pos = expr_to_array(child, nodes) # position of child in the final array of nodes, 'nodes'
-            indices.append(pos)
-        if op == Operator.power:
-            pos = value_to_array(expr.expo, nodes)
-            indices.append(pos)
-        elif (op == Operator.add and expr.constant != 0.0) or (op == Operator.prod and expr.constant != 1.0):
-            pos = value_to_array(expr.constant, nodes)
-            indices.append(pos)
-        nodes.append( tuple( [op, indices] ) )
-    else: # var
-        nodes.append( tuple( [op, expr.children] ) )
+            # position of child in the final array of nodes, 'nodes'
+            indices.append(expr_to_array(child, nodes))
+        if t is PowExpr:
+            indices.append(value_to_array(expr.expo, nodes))
+        elif (t is SumExpr and expr.constant != 0) or (
+            t is ProdExpr and expr.constant != 1
+        ):
+            indices.append(value_to_array(expr.constant, nodes))
+
+        nodes.append((t, indices))
+
+    else:  # var
+        nodes.append((t, expr.children))
     return len(nodes) - 1
 
 
