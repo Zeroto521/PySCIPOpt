@@ -265,13 +265,18 @@ cdef class ExprLike:
         return NotImplemented
 
     def __getitem__(self, key):
-        return self.as_expr()[key]
+        cdef Expr v = self.as_expr()
+        if not isinstance(key, Term):
+            key = Term(key)
+        return v.terms.get(key, 0.0)
 
     def __iter__(self):
-        return iter(self.as_expr())
+        cdef Expr v = self.as_expr()
+        return iter(v.terms)
 
     def __add__(self, other, /):
-        return self.as_expr() + other
+        cdef Expr v = self.as_expr()
+        return Expr.__add__(v, other)
 
     def __radd__(self, other, /):
         return self + other
@@ -283,13 +288,15 @@ cdef class ExprLike:
         return (-self) + other
 
     def __mul__(self, other, /):
-        return self.as_expr() * other
+        cdef Expr v = self.as_expr()
+        return Expr.__mul__(v, other)
 
     def __rmul__(self, other, /):
         return self * other
 
     def __truediv__(self, other, /):
-        return self.as_expr() / other
+        cdef Expr v = self.as_expr()
+        return Expr.__truediv__(v, other)
 
     def __rtruediv__(self, other, /) -> GenExpr:
         return buildGenExprObj(other) / self
