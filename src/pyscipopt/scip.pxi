@@ -1104,7 +1104,7 @@ cdef class Solution:
 
     def __getitem__(
         self,
-        expr: Union[Variable, Variable, Expr, GenExpr, MatrixExpr],
+        expr: Union[ExprLike, MatrixExpr],
     ) -> Union[float, np.ndarray]:
         if not isinstance(expr, (ExprLike, MatrixExpr)):
             raise TypeError(
@@ -12668,6 +12668,7 @@ cdef class Model:
         cdef SCIP_OBJSENSE objsense
         cdef int i
         cdef _VarArray wrapper
+        cdef Expr _coeffs_expr
 
         if sense == "minimize":
             objsense = SCIP_OBJSENSE_MINIMIZE
@@ -12678,12 +12679,15 @@ cdef class Model:
 
         assert isinstance(coeffs, (Variable, Expr)), "given coefficients are not Variable or Expr but %s" % coeffs.__class__.__name__
 
-        if coeffs.degree() > 1:
+        # Variable is not an Expr anymore (M4): use its shared, read-only Expr view.
+        _coeffs_expr = (<ExprLike>coeffs).as_expr()
+
+        if _coeffs_expr.degree() > 1:
             raise ValueError("Nonlinear objective functions are not supported!")
-        if coeffs[CONST] != 0.0:
+        if _coeffs_expr[CONST] != 0.0:
             raise ValueError("Constant offsets in objective are not supported!")
 
-        nvars = len(coeffs.terms) - (CONST in coeffs.terms)
+        nvars = len(_coeffs_expr.terms) - (CONST in _coeffs_expr.terms)
 
         if nvars == 0:
             PY_SCIP_CALL(SCIPchgReoptObjective(self._scip, objsense, NULL, NULL, 0))
@@ -12693,7 +12697,7 @@ cdef class Model:
         vars = <SCIP_VAR**> malloc(nvars * sizeof(SCIP_VAR*))
 
         i = 0
-        for term, coef in coeffs.terms.items():
+        for term, coef in _coeffs_expr.terms.items():
             # avoid CONST term of Expr
             if term != CONST:
                 wrapper = _VarArray(term[0])
