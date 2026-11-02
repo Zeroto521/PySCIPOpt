@@ -307,7 +307,7 @@ cdef class ExprLike:
     def __richcmp__(self, other, int op):
         return _expr_richcmp(self, other, op)
 
-    def __neg__(self, /) -> ExprLike:
+    def __neg__(self, /) -> Union[Expr, GenExpr]:
         return self * -1.0
 
     def __pos__(self, /) -> ExprLike:
