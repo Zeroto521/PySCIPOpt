@@ -2280,7 +2280,7 @@ cdef class Node:
 
 cdef class Variable(ExprLike):
     cdef SCIP_VAR* scip_var
-    cdef Expr expr_view
+    cdef Expr _expr
     # can be used to store problem data
     cdef public object data
 

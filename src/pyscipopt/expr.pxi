@@ -166,7 +166,7 @@ CONST = Term()
 
 
 # helper function
-def buildGenExprObj(expr: Union[int, float, np.number, Expr, GenExpr]) -> GenExpr:
+def buildGenExprObj(expr: Union[int, float, np.number, ExprLike]) -> GenExpr:
     """helper function to generate an object of type GenExpr"""
     if not _is_genexpr_compatible(expr):
         raise TypeError(f"unsupported type {type(expr).__name__!s}")
@@ -275,8 +275,7 @@ cdef class ExprLike:
         return iter(v.terms)
 
     def __add__(self, other, /):
-        cdef Expr v = self.as_expr()
-        return Expr.__add__(v, other)
+        return self.as_expr() + other
 
     def __radd__(self, other, /):
         return self + other
@@ -288,15 +287,13 @@ cdef class ExprLike:
         return (-self) + other
 
     def __mul__(self, other, /):
-        cdef Expr v = self.as_expr()
-        return Expr.__mul__(v, other)
+        return self.as_expr() * other
 
     def __rmul__(self, other, /):
         return self * other
 
     def __truediv__(self, other, /):
-        cdef Expr v = self.as_expr()
-        return Expr.__truediv__(v, other)
+        return self.as_expr() / other
 
     def __rtruediv__(self, other, /) -> GenExpr:
         return buildGenExprObj(other) / self
@@ -310,10 +307,10 @@ cdef class ExprLike:
     def __richcmp__(self, other, int op):
         return _expr_richcmp(self, other, op)
 
-    def __neg__(self, /) -> Union[Expr, GenExpr]:
+    def __neg__(self, /) -> ExprLike:
         return self * -1.0
 
-    def __pos__(self, /) -> Union[Expr, GenExpr]:
+    def __pos__(self, /) -> ExprLike:
         return self.copy()
 
     def __abs__(self, /) -> AbsExpr:
@@ -366,14 +363,6 @@ cdef class Expr(ExprLike):
 
         if len(self.terms) == 0:
             self.terms[CONST] = 0.0
-
-    def __getitem__(self, key):
-        if not isinstance(key, Term):
-            key = Term(key)
-        return self.terms.get(key, 0.0)
-
-    def __iter__(self):
-        return iter(self.terms)
 
     def __add__(self, other, /):
         if not _is_expr_compatible(other):
@@ -518,6 +507,8 @@ cdef class ExprCons:
         self._rhs = rhs
         assert not (lhs is None and rhs is None)
         self.normalize()
+        assert not isinstance(self.expr, Variable), \
+            "ExprCons.expr must be a plain Expr after normalize()"
 
     cdef void normalize(self):
         '''move constant terms in expression to bounds'''
@@ -621,6 +612,16 @@ cdef class GenExpr(ExprLike):
 
     def __init__(self): # do we need it
         ''' '''
+
+    def __getitem__(self, key):
+        raise TypeError(
+            f"{self.__class__.__name__!s} has no polynomial form and cannot be indexed"
+        )
+
+    def __iter__(self):
+        raise TypeError(
+            f"{self.__class__.__name__!s} has no polynomial form and cannot be iterated"
+        )
 
     def __add__(self, other, /):
         if not _is_genexpr_compatible(other):

@@ -1558,7 +1558,7 @@ cdef class Variable(ExprLike):
         cdef Expr view = Expr.__new__(Expr)
         var.scip_var = scip_var
         view.terms = {Term(var): 1.0}
-        var.expr_view = view
+        var._expr = view
         return var
 
     @property
@@ -1577,7 +1577,7 @@ cdef class Variable(ExprLike):
         return self.name
 
     cdef Expr as_expr(self):
-        return self.expr_view
+        return self._expr
 
     def vtype(self):
         """
@@ -11676,7 +11676,7 @@ cdef class Model:
     def getSolVal(
         self,
         Solution sol,
-        expr: Union[Variable, Expr, GenExpr, MatrixExpr],
+        expr: Union[ExprLike, MatrixExpr],
     ) -> Union[float, np.ndarray]:
         """
         Retrieve value of given variable or expression in the given solution.
@@ -11704,7 +11704,7 @@ cdef class Model:
 
     def getVal(
         self,
-        expr: Union[Variable, Expr, GenExpr, MatrixExpr],
+        expr: Union[ExprLike, MatrixExpr],
     ) -> Union[float, np.ndarray]:
         """
         Retrieve the value of the given variable or expression in the best known solution.
