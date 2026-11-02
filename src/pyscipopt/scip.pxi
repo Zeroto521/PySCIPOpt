@@ -1555,10 +1555,10 @@ cdef class Variable(ExprLike):
             raise Warning("cannot create Variable with SCIP_VAR* == NULL")
 
         cdef Variable var = Variable.__new__(Variable)
-        cdef Expr view = Expr.__new__(Expr)
+        cdef Expr expr = Expr.__new__(Expr)
         var.scip_var = scip_var
-        view.terms = {Term(var): 1.0}
-        var._expr = view
+        expr.terms = {Term(var): 1.0}
+        var._expr = expr
         return var
 
     @property
